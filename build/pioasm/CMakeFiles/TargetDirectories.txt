@@ -1,3 +1,0 @@
-/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pioasm/CMakeFiles/pioasm.dir
-/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pioasm/CMakeFiles/edit_cache.dir
-/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pioasm/CMakeFiles/rebuild_cache.dir
