@@ -1,0 +1,13 @@
+# Target labels
+ PioasmBuild
+# Source files and their labels
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/CMakeFiles/PioasmBuild
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/CMakeFiles/PioasmBuild.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/CMakeFiles/PioasmBuild-complete.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-build.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-configure.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-download.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-install.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-mkdir.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-patch.rule
+/mnt/d/Coding/Jupiter/InstrumentacaoBaseDeTestes/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/PioasmBuild-stamp/PioasmBuild-update.rule
