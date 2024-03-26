@@ -19,5 +19,6 @@ pico_add_extra_outputs(InstrBase)
 #add_subdirectory(pico-ssd1306)
 target_link_libraries(InstrBase
     pico_stdlib
+    pico_multicore
     #    pico_ssd1306
     hardware_i2c)
