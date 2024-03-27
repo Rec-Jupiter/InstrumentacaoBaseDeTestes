@@ -1,6 +1,0 @@
-[submodule "src/extern/extern/hx711-pico-"]
-	path = src/extern/extern/hx711-pico-
-	url = https://github.com/endail/hx711-pico-c
-[submodule "src/extern/hx711-pico-"]
-	path = src/extern/hx711-pico-
-	url = https://github.com/endail/hx711-pico-c
