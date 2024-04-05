@@ -289,6 +289,33 @@ int32_t hx711_get_value(hx711_t* const hx) {
 
 }
 
+int32_t hx711_get_raw_value(hx711_t* const hx) {
+
+    assert(hx711__is_state_machine_enabled(hx));
+
+    uint32_t rawVal;
+
+    HX711_MUTEX_BLOCK(hx->_mut,
+
+    /**
+     * Block until a value is available
+     *
+     * NOTE: remember that reading from the RX FIFO
+     * simultaneously clears it. That's why we can keep
+     * calling this function hx711_get_value and be
+     * assured we'll be getting a new value each time,
+     * even if the RX FIFO is currently empty.
+     */
+                      rawVal = pio_sm_get_blocking(
+                              hx->_pio,
+                              hx->_reader_sm);
+
+    );
+
+    return rawVal;
+
+}
+
 bool hx711_get_value_timeout(
     hx711_t* const hx,
     int32_t* const val,

@@ -187,6 +187,13 @@ unsigned char hx711_get_clock_pulses(const hx711_gain_t gain);
 int32_t hx711_get_value(hx711_t* const hx);
 
 /**
+ * @brief CUSTOM MADE, basically  the hx711_get_value except it returns the raw instead of the two complements.
+ * @param hx
+ * @return
+ */
+int32_t hx711_get_raw_value(hx711_t* const hx);
+
+/**
  * @brief Obtains a value from the HX711. Blocks until a value
  * is available or the timeout is reached.
  * 

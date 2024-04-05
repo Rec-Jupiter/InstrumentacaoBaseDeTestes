@@ -2,7 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/extern/extern/hx711-pico-" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/src/extern/hx711-pico-" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/src/extern/pico-ssd1306" vcs="Git" />
   </component>
 </project>
