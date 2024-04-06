@@ -178,14 +178,6 @@
 # define COMPILER_VERSION_MINOR DEC(__IBMCPP__/10 % 10)
 # define COMPILER_VERSION_PATCH DEC(__IBMCPP__    % 10)
 
-#elif defined(__open_xl__) && defined(__clang__)
-# define COMPILER_ID "IBMClang"
-# define COMPILER_VERSION_MAJOR DEC(__open_xl_version__)
-# define COMPILER_VERSION_MINOR DEC(__open_xl_release__)
-# define COMPILER_VERSION_PATCH DEC(__open_xl_modification__)
-# define COMPILER_VERSION_TWEAK DEC(__open_xl_ptf_fix_level__)
-
-
 #elif defined(__ibmxl__) && defined(__clang__)
 # define COMPILER_ID "XLClang"
 # define COMPILER_VERSION_MAJOR DEC(__ibmxl_version__)
@@ -309,6 +301,22 @@
   # define COMPILER_VERSION_PATCH DEC(__ARMCOMPILER_VERSION     % 10000)
 # define COMPILER_VERSION_INTERNAL DEC(__ARMCOMPILER_VERSION)
 
+#elif defined(__clang__) && __has_include(<hip/hip_version.h>)
+# define COMPILER_ID "ROCMClang"
+# if defined(_MSC_VER)
+#  define SIMULATE_ID "MSVC"
+# elif defined(__clang__)
+#  define SIMULATE_ID "Clang"
+# elif defined(__GNUC__)
+#  define SIMULATE_ID "GNU"
+# endif
+# if defined(__clang__) && __has_include(<hip/hip_version.h>)
+#  include <hip/hip_version.h>
+#  define COMPILER_VERSION_MAJOR DEC(HIP_VERSION_MAJOR)
+#  define COMPILER_VERSION_MINOR DEC(HIP_VERSION_MINOR)
+#  define COMPILER_VERSION_PATCH DEC(HIP_VERSION_PATCH)
+# endif
+
 #elif defined(__clang__)
 # define COMPILER_ID "Clang"
 # if defined(_MSC_VER)
@@ -321,24 +329,6 @@
    /* _MSC_VER = VVRR */
 #  define SIMULATE_VERSION_MAJOR DEC(_MSC_VER / 100)
 #  define SIMULATE_VERSION_MINOR DEC(_MSC_VER % 100)
-# endif
-
-#elif defined(__LCC__) && (defined(__GNUC__) || defined(__GNUG__) || defined(__MCST__))
-# define COMPILER_ID "LCC"
-# define COMPILER_VERSION_MAJOR DEC(1)
-# if defined(__LCC__)
-#  define COMPILER_VERSION_MINOR DEC(__LCC__- 100)
-# endif
-# if defined(__LCC_MINOR__)
-#  define COMPILER_VERSION_PATCH DEC(__LCC_MINOR__)
-# endif
-# if defined(__GNUC__) && defined(__GNUC_MINOR__)
-#  define SIMULATE_ID "GNU"
-#  define SIMULATE_VERSION_MAJOR DEC(__GNUC__)
-#  define SIMULATE_VERSION_MINOR DEC(__GNUC_MINOR__)
-#  if defined(__GNUC_PATCHLEVEL__)
-#   define SIMULATE_VERSION_PATCH DEC(__GNUC_PATCHLEVEL__)
-#  endif
 # endif
 
 #elif defined(__GNUC__) || defined(__GNUG__)
@@ -373,14 +363,13 @@
 #  define COMPILER_VERSION_TWEAK DEC(_MSC_BUILD)
 # endif
 
-#elif defined(_ADI_COMPILER)
+#elif defined(__VISUALDSPVERSION__) || defined(__ADSPBLACKFIN__) || defined(__ADSPTS__) || defined(__ADSP21000__)
 # define COMPILER_ID "ADSP"
-#if defined(__VERSIONNUM__)
-  /* __VERSIONNUM__ = 0xVVRRPPTT */
-#  define COMPILER_VERSION_MAJOR DEC(__VERSIONNUM__ >> 24 & 0xFF)
-#  define COMPILER_VERSION_MINOR DEC(__VERSIONNUM__ >> 16 & 0xFF)
-#  define COMPILER_VERSION_PATCH DEC(__VERSIONNUM__ >> 8 & 0xFF)
-#  define COMPILER_VERSION_TWEAK DEC(__VERSIONNUM__ & 0xFF)
+#if defined(__VISUALDSPVERSION__)
+  /* __VISUALDSPVERSION__ = 0xVVRRPP00 */
+# define COMPILER_VERSION_MAJOR HEX(__VISUALDSPVERSION__>>24)
+# define COMPILER_VERSION_MINOR HEX(__VISUALDSPVERSION__>>16 & 0xFF)
+# define COMPILER_VERSION_PATCH HEX(__VISUALDSPVERSION__>>8  & 0xFF)
 #endif
 
 #elif defined(__IAR_SYSTEMS_ICC__) || defined(__IAR_SYSTEMS_ICC)
@@ -532,9 +521,6 @@ char const *info_cray = "INFO" ":" "compiler_wrapper[CrayPrgEnv]";
 #  define PLATFORM_ID "Integrity"
 # endif
 
-# elif defined(_ADI_COMPILER)
-#  define PLATFORM_ID "ADSP"
-
 #else /* unknown platform */
 # define PLATFORM_ID
 
@@ -663,12 +649,6 @@ char const *info_cray = "INFO" ":" "compiler_wrapper[CrayPrgEnv]";
 #  define ARCHITECTURE_ID ""
 # endif
 
-# elif defined(__ADSPSHARC__)
-#  define ARCHITECTURE_ID "SHARC"
-
-# elif defined(__ADSPBLACKFIN__)
-#  define ARCHITECTURE_ID "Blackfin"
-
 #else
 #  define ARCHITECTURE_ID
 #endif
@@ -771,7 +751,7 @@ char const* info_arch = "INFO" ":" "arch[" ARCHITECTURE_ID "]";
 #  define CXX_STD __cplusplus
 #endif
 
-const char* info_language_standard_default = "INFO" ":" "standard_default["
+const char* info_language_dialect_default = "INFO" ":" "dialect_default["
 #if CXX_STD > 202002L
   "23"
 #elif CXX_STD > 201703L
@@ -784,16 +764,6 @@ const char* info_language_standard_default = "INFO" ":" "standard_default["
   "11"
 #else
   "98"
-#endif
-"]";
-
-const char* info_language_extensions_default = "INFO" ":" "extensions_default["
-#if (defined(__clang__) || defined(__GNUC__) || defined(__xlC__) ||           \
-     defined(__TI_COMPILER_VERSION__)) &&                                     \
-  !defined(__STRICT_ANSI__)
-  "ON"
-#else
-  "OFF"
 #endif
 "]";
 
@@ -819,8 +789,7 @@ int main(int argc, char* argv[])
 #if defined(__CRAYXT_COMPUTE_LINUX_TARGET)
   require += info_cray[argc];
 #endif
-  require += info_language_standard_default[argc];
-  require += info_language_extensions_default[argc];
+  require += info_language_dialect_default[argc];
   (void)argv;
   return require;
 }

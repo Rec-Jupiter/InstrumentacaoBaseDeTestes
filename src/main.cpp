@@ -3,6 +3,8 @@
 #include "extern/hx711-pico-c/include/common.h"
 #include "extern/pico-ssd1306/textRenderer/TextRenderer.h"
 #include "extern/pico-ssd1306/ssd1306.h"
+#include "hardware/irq.h"
+#include "pico/multicore.h"
 
 #define LED_PIN 25
 
@@ -18,6 +20,9 @@ void init_hx711();
 void init_display();
 void init_i2c();
 
+void core1_interrupt_handler();
+void core1_entry();
+
 pico_ssd1306::SSD1306* display;
 hx711_t* hx;
 
@@ -26,10 +31,9 @@ int main() {
 
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
-
     gpio_put(LED_PIN, 1);
 
-    sleep_ms(500);
+    sleep_ms(3500);
 
     init_i2c();
     init_display();
@@ -38,26 +42,62 @@ int main() {
 
     init_hx711();
 
-
+    multicore_launch_core1(core1_entry);
 
     while (true) {
         int value = hx711_get_raw_value(hx)/* * 852.0/730000.0*/;
+
+        if ((value & 0x00800000) == 0x00800000) {  // Bit 23 == 1
+            value |= 0xFF000000;
+        }
+
         char str[16];
 
         printf("blocking value: %8li\n", value);
 
-        sprintf(str,"%8li",value);
-        display->clear();
-        pico_ssd1306::drawText(display, font_12x16, str, 0 ,0);
-        display->sendBuffer();
-        sleep_ms(20);
+        multicore_fifo_push_blocking(value); //Maybe use timeout, when fifoo gets full (it shouldnt but anyways) this will bloock the program
+
+
+        sleep_ms(5);
+        tight_loop_contents();
    }
 
 
-    hx711_close(hx);
+    hx711_close(hx); // essa linha n executa eu sei ela ta ai so pra lembrar q essa funcao existe
 
     return 0;
 }
+
+void core1_interrupt_handler() {
+    while(multicore_fifo_rvalid()) {
+        char str[16];
+        int raw = multicore_fifo_pop_blocking();
+
+        printf("received data! %d \n", raw);
+
+        sprintf(str,"%8li",raw);
+
+        display->clear();
+        pico_ssd1306::drawText(display, font_12x16, str, 0 ,0);
+        display->sendBuffer();
+    }
+
+    multicore_fifo_clear_irq();
+}
+
+void core1_entry() {
+    multicore_fifo_clear_irq();
+    irq_set_exclusive_handler(SIO_IRQ_PROC1, core1_interrupt_handler);
+    irq_set_enabled(SIO_IRQ_PROC1, true);
+
+    printf("Core 1 executing");
+
+    while(1) {
+        tight_loop_contents();
+        sleep_ms(10);
+    }
+}
+
 
 void init_i2c() {
     printf("Setting i2c\n");
