@@ -9,7 +9,8 @@ pico_sdk_init()
 
 add_executable(InstrBase
         src/main.cpp
-        src/helpers.h)
+        src/helpers.h
+        src/hw_config.c)
 
 pico_enable_stdio_usb(InstrBase 1)
 #pico_enable_stdio_uart(InstrBase 1)
@@ -18,10 +19,12 @@ pico_add_extra_outputs(InstrBase)
 
 add_subdirectory(src/extern/pico-ssd1306)
 add_subdirectory(src/extern/hx711-pico-c)
+add_subdirectory(src/extern/no-os-fat32-sd/src build)
 target_link_libraries(InstrBase
     pico_stdlib
     pico_multicore
     hardware_pio
     hx711-pico-c
     pico_ssd1306
-    hardware_i2c)
+    hardware_i2c
+        no-OS-FatFS-SD-SDIO-SPI-RPi-Pico)
