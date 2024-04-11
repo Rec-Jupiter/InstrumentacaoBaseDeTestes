@@ -12,6 +12,7 @@
 #include "ff.h"
 #include "f_util.h"
 #include "rtc.h"
+#include "sd_card_driver.h"
 
 // To override the log level uncomment the line below and change 'Debug' to the desired minimum level
 //#undef LOG_LEVEL
@@ -62,6 +63,7 @@ void core1_interrupt_handler();
 [[noreturn]] void measuring_loop_blocking();
 
 void data_list_received(Node* list);
+void handle_sd(uint8_t* bytes, int bytesToWrite);
 
 void handle_sd();
 
@@ -88,8 +90,6 @@ hx711_t* hx;
 
 int windClicks = 0;
 
-uint32_t last_flag = 0xFFFFFFFF;
-
 bool recording;
 uint64_t recordingStartingTime;
 
@@ -112,7 +112,7 @@ int main() {
 
     sleep_ms(3500);
 
-    handle_sd();
+
     init_i2c();
     init_display();
 
@@ -134,20 +134,52 @@ int main() {
 
 [[noreturn]] void core1_entry() {
     multicore_fifo_clear_irq();
-    irq_set_exclusive_handler(SIO_IRQ_PROC1, core1_interrupt_handler);
-    irq_set_enabled(SIO_IRQ_PROC1, true);
+    //irq_set_exclusive_handler(SIO_IRQ_PROC1, core1_interrupt_handler);
+    //irq_set_enabled(SIO_IRQ_PROC1, true);
 
     LOG(Information, "Core 1 executing");
 
+    init_sd();
+
+    LOG(Information, "Init SD");
+
+    uint32_t last_flag = 0xFFFFFFFF;
+
     multicore_fifo_push_blocking(CAN_SEND_DATA_FLAG);
     while(true) {
+        sleep_ms(5);
+
+        while(multicore_fifo_rvalid()) {
+            uint32_t raw = multicore_fifo_pop_blocking();
+
+            if (last_flag == 0xFFFFFFFF) {
+                last_flag = raw;
+                continue;
+            }
+
+            switch (last_flag) {
+                case SENDING_DATA_LIST_FLAG: {
+                    Node *head = (Node *) ((uint64_t)raw);  // O RP2040 eh 32bit, mas a IDE nao sabe disso ent **SE A IDE** estiver dando erro
+                    // de '... cast to smaller ...' ignora. Se quando compilar der erro nao ignora nn
+
+                    data_list_received(head);
+                    last_flag = 0xFFFFFFFF;
+                    break;
+                }
+                default:
+                    LOG(Error, "Error, flag not recognized");
+            }
+        }
+        multicore_fifo_clear_irq();
+
         tight_loop_contents();
-        sleep_ms(10);
     }
+
+    //free(fs); // yeah i know this is unreachable ;)
 }
 
 void core1_interrupt_handler() {
-    while(multicore_fifo_rvalid()) {
+    /*while(multicore_fifo_rvalid()) {
         uint32_t raw = multicore_fifo_pop_blocking();
 
         if (last_flag == 0xFFFFFFFF) {
@@ -169,7 +201,7 @@ void core1_interrupt_handler() {
         }
     }
 
-    multicore_fifo_clear_irq();
+    multicore_fifo_clear_irq();*/
 }
 
 
@@ -269,32 +301,6 @@ void core1_interrupt_handler() {
 
 }
 
-void handle_sd() {
-    gpio_pull_up(19);
-    gpio_pull_up(16);
-
-    FATFS fs;
-    FRESULT fr = f_mount(&fs, "", 1);
-    if (FR_OK != fr) LOG(Error, "f_mount error: %s (%d)", FRESULT_str(fr), fr);
-
-
-    FIL fil;
-    const char* const filename = "filename.txt";
-    fr = f_open(&fil, filename, FA_CREATE_NEW | FA_WRITE);
-    if (FR_OK != fr && FR_EXIST != fr)
-        LOG(Error, "f_open(%s) error: %s (%d)", filename, FRESULT_str(fr), fr);
-    if (f_printf(&fil, "Hello, world!\n") < 0) {
-        LOG(Error, "f_printf failed");
-    }
-    fr = f_close(&fil);
-    if (FR_OK != fr) {
-        LOG(Error, "f_close error: %s (%d)", FRESULT_str(fr), fr);
-    }
-
-
-    f_unmount("");
-}
-
 void data_list_received(Node* list) {
     multicore_fifo_push_blocking(DONT_SEND_DATA_FLAG);
 
@@ -316,25 +322,15 @@ void data_list_received(Node* list) {
 
     LOG(Debug, "Erasing");
 
-    uint8_t data[FLASH_PAGE_SIZE];
+    //uint8_t data[4096];
 
 
     LOG(Debug, "While");
-    int offset = 0;
+    //int offset = 0;
     while (list != nullptr) {
         LOG(Debug, "Reading (sizeof: %d)", sizeof(DataPoint));
-        if (offset + sizeof(DataPoint) > FLASH_PAGE_SIZE) {
-            offset = 0;
 
-            for (uint8_t &i : data) {
-                i = 0;
-            }
-        }
-
-        for (int i = 0; i < sizeof(DataPoint); i++) {
-            data[offset + i] = list->point.bytes[i];
-        }
-        offset += sizeof(DataPoint);
+        write_bytes_buffered(list->point.bytes, sizeof(DataPoint));
 
         LOG(Debug, "clearing list value %li", list->point.data.hx711_value);
         Node* lastNode = list;
