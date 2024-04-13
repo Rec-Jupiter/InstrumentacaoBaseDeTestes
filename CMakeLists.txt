@@ -12,7 +12,8 @@ add_executable(InstrBase
         src/helpers.h
         src/hw_config.c
         src/sd_card_driver.c
-        src/sd_card_driver.h)
+        src/sd_card_driver.h
+        src/config.h src/main.h src/helpers.c)
 
 pico_enable_stdio_usb(InstrBase 1)
 #pico_enable_stdio_uart(InstrBase 1)

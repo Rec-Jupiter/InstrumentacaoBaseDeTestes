@@ -4,36 +4,17 @@
 #include "extern/hx711-pico-c/include/common.h"
 #include "extern/pico-ssd1306/textRenderer/TextRenderer.h"
 #include "extern/pico-ssd1306/ssd1306.h"
-#include "hardware/irq.h"
 #include "pico/multicore.h"
-#include <cinttypes>
 #include "hardware/flash.h"
 #include "helpers.h"
-#include "ff.h"
-#include "f_util.h"
 #include "rtc.h"
 #include "sd_card_driver.h"
+#include "config.h"
+#include "main.h"
 
 // To override the log level uncomment the line below and change 'Debug' to the desired minimum level
 //#undef LOG_LEVEL
 //#define LOG_LEVEL Debug
-
-#define LED_PIN 25
-
-// If you are changing the pins, please refer to https://pico.pinout.xyz/
-#define I2C i2c0
-#define I2C_PIN_SDA 4
-#define I2C_PIN_SCL 5
-
-#define HX711_PIN_CLK 14
-#define HX711_PIN_DATA 15
-#define WIND_GPIO 10
-#define WIND_SAMPLE_TIME_US 2000000
-
-#define WIND_RADIUS 0.105
-
-#define LED_ON() gpio_put(LED_PIN, 1)
-#define LED_OFF() gpio_put(LED_PIN, 0)
 
 #define MIN_DATA_BUFFER_LEN 80
 
@@ -44,58 +25,21 @@
 #define DONT_SEND_DATA_FLAG 2
 #define CAN_SEND_DATA_FLAG 3
 
-struct Node;
-struct DataPoint;
-union DataPointUnion;
 
-
-void init_hx711();
-void init_display();
-void init_i2c();
-void init_wind_measure();
-
-void gpio_interrupt_handler(uint gpio, uint32_t events);
-
-void core1_interrupt_handler();
-
-[[noreturn]] void core1_entry();
-
-[[noreturn]] void measuring_loop_blocking();
-
-void data_list_received(Node* list);
-void handle_sd(uint8_t* bytes, int bytesToWrite);
-
-void handle_sd();
-
-struct __attribute__ ((__packed__)) DataPoint {                 // __attribute__ ((__packed__)) means it will be
-    uint64_t time;                                              // stored in memory without padding.
-    float wind_speed;
-    int hx711_value;
-};
-
-union DataPointUnion {                                           // Hacky union for getting the data as its bytes
-    DataPoint data;
-    uint8_t bytes[sizeof(DataPoint)];
-};
-
-struct Node {                                                    // Linked list used for buffering on Core 0
-    DataPointUnion point;
-    Node* next;
-};
-
+// GLOBAL VARIABLES
 
 pico_ssd1306::SSD1306* display;
 hx711_t* hx;
-
 
 int windClicks = 0;
 
 bool recording;
 uint64_t recordingStartingTime;
 
-
+// Mem tracking
 int createdNodes = 0;
 
+// END GLOBAL VARIABLES
 
 int main() {
     stdio_init_all();
@@ -134,14 +78,10 @@ int main() {
 
 [[noreturn]] void core1_entry() {
     multicore_fifo_clear_irq();
-    //irq_set_exclusive_handler(SIO_IRQ_PROC1, core1_interrupt_handler);
-    //irq_set_enabled(SIO_IRQ_PROC1, true);
 
-    LOG(Information, "Core 1 executing");
+    LOG_COLORED(Information, CONSOLE_COLOR_GREEN, "Core 1 executing");
 
     init_sd();
-
-    LOG(Information, "Init SD");
 
     uint32_t last_flag = 0xFFFFFFFF;
 
@@ -176,32 +116,6 @@ int main() {
     }
 
     //free(fs); // yeah i know this is unreachable ;)
-}
-
-void core1_interrupt_handler() {
-    /*while(multicore_fifo_rvalid()) {
-        uint32_t raw = multicore_fifo_pop_blocking();
-
-        if (last_flag == 0xFFFFFFFF) {
-            last_flag = raw;
-            continue;
-        }
-
-        switch (last_flag) {
-            case SENDING_DATA_LIST_FLAG: {
-                Node *head = (Node *) raw;  // O RP2040 eh 32bit, mas a IDE nao sabe disso ent **SE A IDE** estiver dando erro
-                                            // de '... cast to smaller ...' ignora. Se quando compilar der erro nao ignora nn
-
-                data_list_received(head);
-                last_flag = 0xFFFFFFFF;
-                break;
-            }
-            default:
-                LOG(Error, "Error, flag not recognized");
-        }
-    }
-
-    multicore_fifo_clear_irq();*/
 }
 
 
@@ -251,9 +165,9 @@ void core1_interrupt_handler() {
         count++;
 
         if (count >= MIN_DATA_BUFFER_LEN) {
-            LOG(Information, "blocking value: %8li", value);
-            LOG(Information, "Period time: %" PRIu64, time_us_64() - lastTime);
-            LOG(Information, "Can Send %d", canSendData);
+            LOG(Verbose, "blocking value: %8li", value);
+            LOG(Verbose, "Period time: %" PRIu64, time_us_64() - lastTime);
+            LOG(Verbose, "Can Send %d", canSendData);
         }
 
 
@@ -262,9 +176,11 @@ void core1_interrupt_handler() {
 
             switch (flag) {
                 case DONT_SEND_DATA_FLAG:
+                    LOG(Information, "Cant send data flag received");
                     canSendData = false;
                     break;
                 case CAN_SEND_DATA_FLAG:
+                    LOG(Information, "Send data flag received");
                     canSendData = true;
                     break;
                 default:
@@ -298,7 +214,6 @@ void core1_interrupt_handler() {
 
         tight_loop_contents();
     }
-
 }
 
 void data_list_received(Node* list) {
@@ -346,9 +261,7 @@ void data_list_received(Node* list) {
 }
 
 
-
-
-
+// This function receives the hardware interrupts in any GPIO
 void gpio_interrupt_handler(uint gpio, uint32_t events) {
     LOG(Verbose, "GPIO %d %d, edge rise event is %d", gpio, events, (uint32_t)GPIO_IRQ_EDGE_RISE);
     if (gpio != WIND_GPIO) return;
@@ -359,7 +272,7 @@ void gpio_interrupt_handler(uint gpio, uint32_t events) {
 }
 
 
-
+// COMPONENT INIT FUNCTION
 
 /*
  * The core that calls this funcion is the one that will receive the interrupt
@@ -369,7 +282,6 @@ void init_wind_measure() {
     gpio_pull_down(WIND_GPIO);
     gpio_set_irq_enabled_with_callback(WIND_GPIO, GPIO_IRQ_EDGE_RISE, true, &gpio_interrupt_handler);
 }
-
 
 void init_i2c() {
     LOG(Information, "Setting i2c");
