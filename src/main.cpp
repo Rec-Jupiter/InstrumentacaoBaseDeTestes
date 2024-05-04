@@ -16,7 +16,9 @@
 //#undef LOG_LEVEL
 //#define LOG_LEVEL Debug
 
-#define MIN_DATA_BUFFER_LEN 80
+#define MIN_DATA_BUFFER_LEN 80 // Since the HX711 sample rate is 80Hz, this is about 1s of time
+
+// === FIFO FLAGS ===
 
 //From core 0 to 1
 #define SENDING_DATA_LIST_FLAG 1
@@ -25,8 +27,9 @@
 #define DONT_SEND_DATA_FLAG 2
 #define CAN_SEND_DATA_FLAG 3
 
+// === END OF FIFO FLAGS ===
 
-// GLOBAL VARIABLES
+// === GLOBAL VARIABLES ===
 
 pico_ssd1306::SSD1306* display;
 hx711_t* hx;
@@ -39,7 +42,9 @@ uint64_t recordingStartingTime;
 // Mem tracking
 int createdNodes = 0;
 
-// END GLOBAL VARIABLES
+// === END GLOBAL VARIABLES ===
+
+// === ACTUAL CODE ===
 
 int main() {
     stdio_init_all();
@@ -82,6 +87,7 @@ int main() {
     LOG_COLORED(Information, CONSOLE_COLOR_GREEN, "Core 1 executing");
 
     init_sd();
+    create_new_recording();
 
     uint32_t last_flag = 0xFFFFFFFF;
 
@@ -151,6 +157,7 @@ int main() {
             // v = x * 2pi * r m/s
             // v = (clicks * 2pi * r) / timeSinceLast
 
+            // The line below makes the calculation above in double precision, but converts o single precision (float) to save space
             lastMeasuredWindSpeed = (float)(((double)windClicks * 2 * 3.1415926535f * WIND_RADIUS) / ((double)timeSinceLastMeasureUS / 1000000.0));
 
             LOG(Information, "Calculated wind speed is: %2.3f m/s", lastMeasuredWindSpeed);
@@ -220,7 +227,7 @@ void data_list_received(Node* list) {
     multicore_fifo_push_blocking(DONT_SEND_DATA_FLAG);
 
 
-    if (createdNodes >= MIN_DATA_BUFFER_LEN * 12)
+    if (createdNodes >= MIN_DATA_BUFFER_LEN * 20)
         LOG(Error, "[ERROR - MEM LEAK] Possible memory leak detected!!! %d nodes currently existing!", createdNodes);
 
     char str[16];
@@ -235,17 +242,14 @@ void data_list_received(Node* list) {
     pico_ssd1306::drawText(display, font_12x16, windStr, 0 ,20);
     display->sendBuffer();
 
-    LOG(Debug, "Erasing");
-
-    //uint8_t data[4096];
-
 
     LOG(Debug, "While");
     //int offset = 0;
     while (list != nullptr) {
         LOG(Debug, "Reading (sizeof: %d)", sizeof(DataPoint));
 
-        write_bytes_buffered(list->point.bytes, sizeof(DataPoint));
+        write_as_csv_buffered(list->point.data.time, list->point.data.wind_speed, list->point.data.hx711_value);
+        //write_bytes_buffered(list->point.bytes, sizeof(DataPoint));
 
         LOG(Debug, "clearing list value %li", list->point.data.hx711_value);
         Node* lastNode = list;
@@ -272,7 +276,7 @@ void gpio_interrupt_handler(uint gpio, uint32_t events) {
 }
 
 
-// COMPONENT INIT FUNCTION
+// === COMPONENT INIT FUNCTIONS ===
 
 /*
  * The core that calls this funcion is the one that will receive the interrupt

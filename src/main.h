@@ -5,6 +5,11 @@
 #ifndef INSTRBASE_MAIN_H
 #define INSTRBASE_MAIN_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include <pico/types.h>
 
 struct Node;
@@ -42,5 +47,9 @@ struct Node {                                                    // Linked list 
     DataPointUnion point;
     Node* next;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //INSTRBASE_MAIN_H

@@ -16,6 +16,7 @@
 FATFS* fs;
 uint8_t buf_data[BUFFER_LEN];
 int current_buf_offset;
+char* current_recording_file_name;
 
 void init_sd() {
     LOG(Information, "Init SD card");
@@ -48,8 +49,53 @@ void init_sd() {
     LOG(Information, "%10lu KiB total drive space.\n             %10lu KiB available.\n", tot_sect / 2, fre_sect / 2);
 
     list_dir("");
+    current_recording_file_name = get_next_recording_name("");
 
     f_unmount("");
+}
+
+void create_new_recording() {
+    FRESULT fr = f_mount(fs, "", 1);
+    if (FR_OK != fr) {
+        LOG(Error, "f_mount error when creating new recording: %s (%d)", FRESULT_str(fr), fr);
+        f_unmount("");
+        return;
+    }
+    else LOG(Information, "f_mount successful when creating new recording");
+
+    if (current_recording_file_name != NULL)
+        free(current_recording_file_name);
+
+    current_recording_file_name = get_next_recording_name("");
+
+    LOG(Information, "Next name is %s", current_recording_file_name);
+
+    f_unmount("");
+}
+
+void finish_current_recording() {
+    write_remaining_buffer();
+}
+
+void reset_buffer() {
+    current_buf_offset = 0;
+
+    for (int j = 0; j < BUFFER_LEN; j++) {
+        buf_data[j] = 0;
+    }
+}
+
+void write_as_csv_buffered(uint64_t time, float wind, int hx711) {
+    char buf[256] = "\0";
+    sprintf(buf, "%u,%f,%d\n", time, wind, hx711);
+
+    LOG(Debug, "CSV LINE: %s", buf);
+
+    int i = 0;
+    while(i < 256 && buf[i])
+        i++;
+
+    write_bytes_buffered((unsigned char *)buf, i);
 }
 
 void write_bytes_buffered(const uint8_t* bytes, int bytesToWrite) {
@@ -58,23 +104,15 @@ void write_bytes_buffered(const uint8_t* bytes, int bytesToWrite) {
         current_buf_offset++;
 
         if (current_buf_offset >= BUFFER_LEN) {
-            save_to_sd("filename.txt", buf_data, BUFFER_LEN);
-            current_buf_offset = 0;
-
-            for (int j = 0; j < BUFFER_LEN; j++) {
-                buf_data[j] = 0;
-            }
+            save_to_sd(current_recording_file_name, buf_data, BUFFER_LEN);
+            reset_buffer();
         }
     }
 }
 
 void write_remaining_buffer() {
-    save_to_sd("filename.txt", buf_data, current_buf_offset);
-    current_buf_offset = 0;
-
-    for (int j = 0; j < BUFFER_LEN; j++) {
-        buf_data[j] = 0;
-    }
+    save_to_sd(current_recording_file_name, buf_data, current_buf_offset);
+    reset_buffer();
 }
 
 void save_to_sd(char* filename, uint8_t* bytes, int bytesToWrite) {
@@ -82,8 +120,8 @@ void save_to_sd(char* filename, uint8_t* bytes, int bytesToWrite) {
     FIL fil;
 
     FRESULT fr = f_mount(fs, "", 0);
-    if (FR_OK != fr) LOG(Error, "f_mount error: %s (%d)", FRESULT_str(fr), fr);
-    else LOG(Information, "f_mount successful");
+    if (FR_OK != fr) LOG(Error, "f_mount error when saving to sd: %s (%d)", FRESULT_str(fr), fr);
+    else LOG(Information, "f_mount successful when saving to sd");
 
 
     fr = f_stat(filename, &fno);
@@ -151,4 +189,61 @@ FRESULT list_dir (const char *path)
     }
     printf(CONSOLE_COLOR_WHITE);
     return res;
+}
+
+char* get_next_recording_name(const char *path)
+{
+    FRESULT res;
+    DIR dir;
+    FILINFO fno;
+    int nfile, ndir;
+
+    char* filename = (char*)malloc(sizeof(char) * 256);
+    int biggestFileNum = -1;
+
+    printf(CONSOLE_COLOR_GREEN);
+    res = f_opendir(&dir, path);                       /* Open the directory */
+    if (res == FR_OK) {
+        nfile = ndir = 0;
+        for (;;) {
+            res = f_readdir(&dir, &fno);                   /* Read a directory item */
+            if (res != FR_OK || fno.fname[0] == 0) break;  /* Error or end of dir */
+            if (fno.fattrib & AM_DIR) {            /* Directory */
+                printf("   <DIR>   %s\n", fno.fname);
+                ndir++;
+            } else {                               /* File */
+                //printf("%10u %s\n", fno.fsize, fno.fname);
+                printf("%10u ", fno.fsize);
+                printf("%s \n", fno.fname);
+                nfile++;
+
+                int fileNum = get_number_of_filename(fno.fname);
+                if (fileNum > biggestFileNum) biggestFileNum = fileNum;
+            }
+        }
+        f_closedir(&dir);
+        printf("%d dirs, %d files.\n", ndir, nfile);
+    } else {
+        printf("Failed to open \"%s\". (%u)\n", path, res);
+    }
+
+    sprintf(filename, "rec_%d.txt", biggestFileNum+1);
+    printf("Biggest file number found is %d, next is %d, next filename is %s", biggestFileNum, biggestFileNum+1, filename);
+
+    printf(CONSOLE_COLOR_WHITE);
+
+    return filename;
+}
+
+int get_number_of_filename(char* filename) {
+    int num = 0;
+    while (*filename) {
+        if (*filename - '0' >= 0 && *filename - '0' <= 9) {
+            num *= 10;
+            num += (*filename - '0');
+        }
+        filename++;
+    }
+
+    return num;
 }

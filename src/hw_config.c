@@ -19,24 +19,29 @@ See
 https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/tree/main#customizing-for-the-hardware-configuration
 */
 
-#include "hw_config.h"
+/* =========== YOU PROBABLY DONT NEED TO EDIT THIS FILE =========== */
+/* If you are looking for the pin setup, that is located in the config.h file */
+/* =========== VOCE NAO DEVE PRECISAR MEXER NESSE ARQUIVO =========== */
+/* Se voce quer mudar os pins, é no arquivo config.h */
 
+#include "hw_config.h"
+#include "config.h"
 
 
 
 /* Configuration of RP2040 hardware SPI object */
 static spi_t spi = {  
     .hw_inst = spi0,  // RP2040 SPI component
-    .sck_gpio = 18,    // GPIO number (not Pico pin number)
-    .mosi_gpio = 19,
-    .miso_gpio = 16,
+    .sck_gpio = SCK_GPIO,    // GPIO number (not Pico pin number)
+    .mosi_gpio = MOSI_GPIO,
+    .miso_gpio = MISO_GPIO,
     .baud_rate = 12 * 1000 * 1000   // Actual frequency: 10416666.
 };
 
 /* SPI Interface */
 static sd_spi_if_t spi_if = {
     .spi = &spi,  // Pointer to the SPI driving this card
-    .ss_gpio = 17      // The SPI slave select GPIO for this SD card
+    .ss_gpio = SS_GPIO      // The SPI slave select GPIO for this SD card
 };
 
 /* Configuration of the SD Card socket object */
