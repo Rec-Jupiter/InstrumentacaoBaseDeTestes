@@ -6,6 +6,7 @@
 #include "extern/pico-ssd1306/ssd1306.h"
 #include "pico/multicore.h"
 #include "hardware/flash.h"
+#include "hardware/gpio.h"
 #include "helpers.h"
 #include "rtc.h"
 #include "sd_card_driver.h"
@@ -86,14 +87,32 @@ int main() {
 
     LOG_COLORED(Information, CONSOLE_COLOR_GREEN, "Core 1 executing");
 
+    sleep_ms(500);
     init_sd();
-    create_new_recording();
+
+    gpio_init(RECORDING_SWITCH);
+    gpio_set_dir(RECORDING_SWITCH, GPIO_IN);
+    gpio_pull_up(RECORDING_SWITCH);
 
     uint32_t last_flag = 0xFFFFFFFF;
 
     multicore_fifo_push_blocking(CAN_SEND_DATA_FLAG);
     while(true) {
         sleep_ms(5);
+
+        if (recording && gpio_get(RECORDING_SWITCH)) {          // Recording sw off
+            LOG_COLORED(Verbose, CONSOLE_COLOR_CYAN, "Recording switch turned off!");
+            recording = false;
+            finish_current_recording();
+        } else if (!recording && !gpio_get(RECORDING_SWITCH)) { // Recording sw on
+            LOG_COLORED(Verbose, CONSOLE_COLOR_CYAN, "Recording switch turned on!");
+            recording = true;
+            char* filename = create_new_recording();
+
+            display->clear();
+            pico_ssd1306::drawText(display, font_12x16, filename, 0 ,40);
+            display->sendBuffer();
+        }
 
         while(multicore_fifo_rvalid()) {
             uint32_t raw = multicore_fifo_pop_blocking();
@@ -120,8 +139,6 @@ int main() {
 
         tight_loop_contents();
     }
-
-    //free(fs); // yeah i know this is unreachable ;)
 }
 
 
@@ -158,7 +175,7 @@ int main() {
             // v = (clicks * 2pi * r) / timeSinceLast
 
             // The line below makes the calculation above in double precision, but converts o single precision (float) to save space
-            lastMeasuredWindSpeed = (float)(((double)windClicks * 2 * 3.1415926535f * WIND_RADIUS) / ((double)timeSinceLastMeasureUS / 1000000.0));
+            lastMeasuredWindSpeed = (float)(((double)windClicks * 2 * 3.1415926535 * WIND_RADIUS) / ((double)timeSinceLastMeasureUS / 1000000.0));
 
             LOG(Information, "Calculated wind speed is: %2.3f m/s", lastMeasuredWindSpeed);
 
@@ -244,12 +261,13 @@ void data_list_received(Node* list) {
 
 
     LOG(Debug, "While");
-    //int offset = 0;
     while (list != nullptr) {
         LOG(Debug, "Reading (sizeof: %d)", sizeof(DataPoint));
 
-        write_as_csv_buffered(list->point.data.time, list->point.data.wind_speed, list->point.data.hx711_value);
-        //write_bytes_buffered(list->point.bytes, sizeof(DataPoint));
+        if (recording) {
+            write_as_csv_buffered(list->point.data.time, list->point.data.wind_speed, list->point.data.hx711_value);
+            //write_bytes_buffered(list->point.bytes, sizeof(DataPoint));
+        }
 
         LOG(Debug, "clearing list value %li", list->point.data.hx711_value);
         Node* lastNode = list;

@@ -10,6 +10,7 @@
 #include "helpers.h"
 #include "f_util.h"
 #include "sd_card_driver.h"
+#include "config.h"
 
 #define BUFFER_LEN 4096
 
@@ -21,8 +22,9 @@ char* current_recording_file_name;
 void init_sd() {
     LOG(Information, "Init SD card");
 
-    gpio_pull_up(19);
-    gpio_pull_up(16);
+    gpio_pull_up(MOSI_GPIO);
+    gpio_pull_up(MISO_GPIO);
+    gpio_pull_up(SS_GPIO);
 
     fs = (FATFS*)malloc(sizeof (FATFS));
     current_buf_offset = 0;
@@ -54,12 +56,12 @@ void init_sd() {
     f_unmount("");
 }
 
-void create_new_recording() {
+char* create_new_recording() {
     FRESULT fr = f_mount(fs, "", 1);
     if (FR_OK != fr) {
         LOG(Error, "f_mount error when creating new recording: %s (%d)", FRESULT_str(fr), fr);
         f_unmount("");
-        return;
+        return NULL;
     }
     else LOG(Information, "f_mount successful when creating new recording");
 
@@ -71,6 +73,8 @@ void create_new_recording() {
     LOG(Information, "Next name is %s", current_recording_file_name);
 
     f_unmount("");
+
+    return current_recording_file_name;
 }
 
 void finish_current_recording() {
@@ -111,6 +115,7 @@ void write_bytes_buffered(const uint8_t* bytes, int bytesToWrite) {
 }
 
 void write_remaining_buffer() {
+    if (current_buf_offset == 0) return;
     save_to_sd(current_recording_file_name, buf_data, current_buf_offset);
     reset_buffer();
 }

@@ -20,7 +20,7 @@ void write_remaining_buffer();
 int get_number_of_filename(char* filename);
 void reset_buffer();
 char* get_next_recording_name(const char *path);
-void create_new_recording();
+char* create_new_recording();
 void finish_current_recording();
 FRESULT list_dir (const char *path);
 

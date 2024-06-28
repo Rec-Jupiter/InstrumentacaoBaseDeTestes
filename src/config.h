@@ -9,12 +9,12 @@
 
 // If you are changing the pins, please refer to https://pico.pinout.xyz/
 
-// Display Pins
+// Display GPIO Pins
 #define I2C i2c0
 #define I2C_PIN_SDA 4
 #define I2C_PIN_SCL 5
 
-// SD Card Pins
+// SD Card GPIO Pins
 #define SCK_GPIO 18
 #define MOSI_GPIO 19
 #define MISO_GPIO 16
@@ -28,9 +28,10 @@
 #define WIND_GPIO 10
 #define WIND_SAMPLE_TIME_US 1000000
 
-// In meters
-#define WIND_RADIUS 0.105
+#define WIND_RADIUS 0.105 // In meters
 
+// Recording Controll GPIO Pin
+#define RECORDING_SWITCH 6
 
 
 

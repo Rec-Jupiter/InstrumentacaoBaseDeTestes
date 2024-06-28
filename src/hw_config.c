@@ -19,10 +19,24 @@ See
 https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/tree/main#customizing-for-the-hardware-configuration
 */
 
+
+
+
+
+
+
 /* =========== YOU PROBABLY DONT NEED TO EDIT THIS FILE =========== */
 /* If you are looking for the pin setup, that is located in the config.h file */
 /* =========== VOCE NAO DEVE PRECISAR MEXER NESSE ARQUIVO =========== */
 /* Se voce quer mudar os pins, é no arquivo config.h */
+
+
+
+
+
+
+
+
 
 #include "hw_config.h"
 #include "config.h"
