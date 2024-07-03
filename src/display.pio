@@ -1,0 +1,81 @@
+.program display
+.side_set 1
+
+; Output as serial, in specified pin, data to the ST7920 controller
+
+.wrap_target
+
+    pull            side 0
+
+    set pins, 1     side 0
+    set X, 4        side 0
+
+start_bit:
+    mov pins, !null side 1
+    jmp X--, start_bit side 0
+
+    out pins, 1     side 1
+    nop             side 0
+    out pins, 1     side 1
+    nop             side 0
+
+    mov pins, null  side 1
+    set X, 1        side 0
+
+send_data:
+    out pins, 1     side 1
+    nop             side 0
+    out pins, 1     side 1
+    nop             side 0
+    out pins, 1     side 1
+    nop             side 0
+    out pins, 1     side 1
+    nop             side 0
+
+    mov pins, null  side 1
+    nop             side 0
+    mov pins, null  side 1
+    nop             side 0
+    mov pins, null  side 1
+    nop             side 0
+    mov pins, null  side 1
+
+    jmp X--, send_data side 0
+
+    set pins, 0     side 0
+
+.wrap
+
+
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void display_program_init(PIO pio, uint sm, uint offset, uint pin_sd, uint pin_sck, uint pin_cs) {
+    pio_sm_config c = display_program_get_default_config(offset);
+
+    sm_config_set_out_pins(&c, pin_sd, 1);
+    sm_config_set_sideset_pins(&c, pin_sck);
+    sm_config_set_set_pins(&c, pin_cs, 1);
+
+
+    pio_gpio_init(pio, pin_sd);
+    pio_gpio_init(pio, pin_sck);
+    pio_gpio_init(pio, pin_cs);
+
+
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_sd, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_sck, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_cs, 1, true);
+
+
+
+    float div = clock_get_hz(clk_sys) / (53000 * 2);
+    sm_config_set_clkdiv(&c, div);
+
+    // Load our configuration, and jump to the start of the program
+    pio_sm_init(pio, sm, offset, &c);
+    // Set the state machine running
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

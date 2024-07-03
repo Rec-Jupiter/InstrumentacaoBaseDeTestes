@@ -24,7 +24,7 @@ void init_sd() {
 
     gpio_pull_up(MOSI_GPIO);
     gpio_pull_up(MISO_GPIO);
-    gpio_pull_up(SS_GPIO);
+    gpio_pull_up(SS_SDCARD_GPIO);
 
     fs = (FATFS*)malloc(sizeof (FATFS));
     current_buf_offset = 0;

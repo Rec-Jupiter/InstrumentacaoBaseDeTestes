@@ -15,10 +15,10 @@
 #define I2C_PIN_SCL 5
 
 // SD Card GPIO Pins
-#define SCK_GPIO 18
-#define MOSI_GPIO 19
-#define MISO_GPIO 16
-#define SS_GPIO 17
+#define SCK_GPIO 18     // SPI0
+#define MOSI_GPIO 19    // SPI0
+#define MISO_GPIO 16    // SPI0
+#define SS_SDCARD_GPIO 17
 
 // HX711 Pins
 #define HX711_PIN_CLK 14

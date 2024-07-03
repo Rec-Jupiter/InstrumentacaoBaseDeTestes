@@ -13,6 +13,8 @@
 #include "config.h"
 #include "main.h"
 
+#include "display.pio.h"
+
 // To override the log level uncomment the line below and change 'Debug' to the desired minimum level
 //#undef LOG_LEVEL
 //#define LOG_LEVEL Debug
@@ -63,6 +65,27 @@ int main() {
     sleep_ms(3500);
 
 
+    PIO pio = pio1;
+
+    uint offset = pio_add_program(pio, &display_program);
+
+    uint sm = pio_claim_unused_sm(pio, true);
+    display_program_init(pio, sm, offset, 0, 1, 2);
+
+    while (true) {
+        pio_sm_put_blocking(pio, sm, 0x00000200);
+        sleep_ms(500);
+
+
+        // Blink
+        //pio_sm_put_blocking(pio, sm, 1);
+        //sleep_ms(500);
+        // Blonk
+        //pio_sm_put_blocking(pio, sm, 0x000003FF); // All 1
+        //sleep_ms(500);
+    }
+
+
     init_i2c();
     init_display();
 
@@ -93,6 +116,8 @@ int main() {
     gpio_init(RECORDING_SWITCH);
     gpio_set_dir(RECORDING_SWITCH, GPIO_IN);
     gpio_pull_up(RECORDING_SWITCH);
+
+
 
     uint32_t last_flag = 0xFFFFFFFF;
 

@@ -15,7 +15,11 @@ add_executable(InstrBase
         src/sd_card_driver.h
         src/config.h
         src/main.h
-        src/helpers.c)
+        src/helpers.c
+        src/display.pio
+        )
+
+pico_generate_pio_header(InstrBase ${CMAKE_CURRENT_LIST_DIR}/src/display.pio)
 
 pico_enable_stdio_usb(InstrBase 1)
 #pico_enable_stdio_uart(InstrBase 1)
@@ -33,3 +37,6 @@ target_link_libraries(InstrBase
     pico_ssd1306
     hardware_i2c
         no-OS-FatFS-SD-SDIO-SPI-RPi-Pico)
+
+
+pico_add_extra_outputs(InstrBase)
