@@ -42,6 +42,7 @@ send_data:
 
     jmp X--, send_data side 0
 
+    nop             side 0
     set pins, 0     side 0
 
 .wrap

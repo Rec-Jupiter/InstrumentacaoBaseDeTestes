@@ -72,8 +72,38 @@ int main() {
     uint sm = pio_claim_unused_sm(pio, true);
     display_program_init(pio, sm, offset, 0, 1, 2);
 
+    gpio_init(3);
+    gpio_set_dir(3, GPIO_OUT);
+
+    sleep_ms(100);
+
+    gpio_put(3, 0);
+    sleep_ms(10);
+    gpio_put(3, 1);
+
+    pio_sm_put_blocking(pio, sm, 0b0000110000); // Function Set
+    sleep_ms(1);
+
+    pio_sm_put_blocking(pio, sm, 0b0000110000); // Function Set
+    sleep_ms(1);
+
+    pio_sm_put_blocking(pio, sm, 0b0001000000); // Display On/Off BCD1000000
+    sleep_ms(1);
+
+    pio_sm_put_blocking(pio, sm, 0b1000000000);   // Clear
+    sleep_ms(12);
+
+    pio_sm_put_blocking(pio, sm, 0b0110000000);   // Entry mode set  SI100
+    sleep_ms(1);
+
+    pio_sm_put_blocking(pio, sm, 0b1111000000); // Display On/Off BCD1000000
+    sleep_ms(1);
+
+    pio_sm_put_blocking(pio, sm, 0b0100000000); // Return to home
+    sleep_ms(1);
+
     while (true) {
-        pio_sm_put_blocking(pio, sm, 0x00000200);
+        //pio_sm_put_blocking(pio, sm, 0x00000200);
         sleep_ms(500);
 
 
