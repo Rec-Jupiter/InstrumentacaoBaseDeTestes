@@ -17,7 +17,8 @@ add_executable(InstrBase
         src/main.h
         src/helpers.c
         src/display.pio
-        )
+        src/display_driver.c
+        src/display_driver.h)
 
 pico_generate_pio_header(InstrBase ${CMAKE_CURRENT_LIST_DIR}/src/display.pio)
 

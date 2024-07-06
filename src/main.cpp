@@ -12,8 +12,8 @@
 #include "sd_card_driver.h"
 #include "config.h"
 #include "main.h"
+#include "display_driver.h"
 
-#include "display.pio.h"
 
 // To override the log level uncomment the line below and change 'Debug' to the desired minimum level
 //#undef LOG_LEVEL
@@ -64,43 +64,8 @@ int main() {
 
     sleep_ms(3500);
 
+    init_ST7920_display();
 
-    PIO pio = pio1;
-
-    uint offset = pio_add_program(pio, &display_program);
-
-    uint sm = pio_claim_unused_sm(pio, true);
-    display_program_init(pio, sm, offset, 0, 1, 2);
-
-    gpio_init(3);
-    gpio_set_dir(3, GPIO_OUT);
-
-    sleep_ms(100);
-
-    gpio_put(3, 0);
-    sleep_ms(10);
-    gpio_put(3, 1);
-
-    pio_sm_put_blocking(pio, sm, 0b0000110000); // Function Set
-    sleep_ms(1);
-
-    pio_sm_put_blocking(pio, sm, 0b0000110000); // Function Set
-    sleep_ms(1);
-
-    pio_sm_put_blocking(pio, sm, 0b0001000000); // Display On/Off BCD1000000
-    sleep_ms(1);
-
-    pio_sm_put_blocking(pio, sm, 0b1000000000);   // Clear
-    sleep_ms(12);
-
-    pio_sm_put_blocking(pio, sm, 0b0110000000);   // Entry mode set  SI100
-    sleep_ms(1);
-
-    pio_sm_put_blocking(pio, sm, 0b1111000000); // Display On/Off BCD1000000
-    sleep_ms(1);
-
-    pio_sm_put_blocking(pio, sm, 0b0100000000); // Return to home
-    sleep_ms(1);
 
     while (true) {
         //pio_sm_put_blocking(pio, sm, 0x00000200);

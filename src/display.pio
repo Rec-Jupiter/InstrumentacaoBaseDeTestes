@@ -1,7 +1,7 @@
 .program display
 .side_set 1
 
-; Output as serial, in specified pin, data to the ST7920 controller
+; Output as serial, in specified pin, data to the ST7920 controller the protocol requires five start/sync bits of value 1, each byte is transmited by its halfs followed byy four zeros e.g. D7 D6 D5 D4 0000 D3 D2 D1 D0 0000
 
 .wrap_target
 
@@ -42,7 +42,7 @@ send_data:
 
     jmp X--, send_data side 0
 
-    nop             side 0
+    nop             side 0 [5]
     set pins, 0     side 0
 
 .wrap
