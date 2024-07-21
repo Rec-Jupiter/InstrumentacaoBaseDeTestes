@@ -3,12 +3,17 @@
 #include "hardware/gpio.h"
 #include "helpers.h"
 #include "config.h"
+#include "stdio.h"
 
 #include "display.pio.h"
+#include "types.h"
 
 #define pio pio1
 
 uint sm;
+
+unsigned char display_buffer[1024];
+unsigned char has_changed[1024];
 
 unsigned char test[] = {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -103,34 +108,134 @@ void ST7920_graphic_mode(int enable) {
 }
 
 
-void ST7920_draw_bitmap(const unsigned char* graphic) {
+void ST7920_draw_bitmap(const unsigned char* graphic, int write_all) {
     uint8_t x, y;
 
     for (y = 0; y < 64; y++) {
         if (y < 32) {
             for (x = 0; x < 8; x++) {
+                //if (!has_changed[2*x + 16*y] && write_all == 0) continue;
                 send_data(0x080 | y);
-                sleep_us(300);
+                sleep_us(200);
                 send_data(0x080 | x);
-                sleep_us(300);
+                sleep_us(200);
                 send_data(0x100 | (int)graphic[2*x + 16*y]);
-                sleep_us(300);
+                sleep_us(200);
                 send_data(0x100 | (int)graphic[2*x + 16*y + 1]);
-                sleep_us(300);
+                sleep_us(200);
             }
         } else {
             for (x = 0; x < 8; x++) {
+                //if (!has_changed[2*x + 16*y] && write_all == 0) continue;
                 send_data(0x080 | (y - 32));
-                sleep_us(300);
+                sleep_us(200);
                 send_data(0x088 | x);
-                sleep_us(300);
+                sleep_us(200);
                 send_data(0x100 | graphic[2*x + 16*y]);
-                sleep_us(300);
+                sleep_us(200);
                 send_data(0x100 | graphic[2*x + 16*y + 1]);
-                sleep_us(300);
+                sleep_us(200);
             }
         }
     }
+}
+
+void set_buffer_pixel(int x, int y, int value) {
+    unsigned char original = display_buffer[(x / 8) + (16 * y)];
+
+    if (value == 1) display_buffer[(x / 8) + (16 * y)] |= 0b10000000 >> (x % 8);
+    else display_buffer[(x / 8) + (16 * y)] &= 0b111111101111111 >> (x % 8);
+
+    if (original != display_buffer[(x / 8) + (16 * y)]) {
+        if ((x / 8) % 2 == 1)
+            has_changed[(x / 8) + (16 * y) - 1] = 1;
+
+        has_changed[(x / 8) + (16 * y)] = 1;
+    }
+
+}
+
+#define HX711_SAMPLE_RATE_HZ 80
+#define PLOT_TIME_SECONDS 20.0
+#define PLOT_WIDTH_PIXELS 55
+#define PLOT_HEIGHT 40
+#define PLOT_LOWEST_POINT 50
+struct DataPoint nodes_buffer[PLOT_WIDTH_PIXELS];
+int start_index = 0;
+int count_module = 0;
+double avg_wind = 0;
+double avg_force = 0;
+
+void update_buffer(struct Node* data) {
+    if (data == NULL) return;
+
+    float time_window_per_pixel = PLOT_TIME_SECONDS / PLOT_WIDTH_PIXELS;
+    int skip_module = HX711_SAMPLE_RATE_HZ * time_window_per_pixel;
+
+    //count_module = 0;
+    //avg_wind = 0;
+    //avg_force = 0;
+    struct Node* iterator = data;
+    while (iterator->next != NULL) {
+        count_module++;
+
+        avg_wind += iterator->point.data.wind_speed / skip_module;
+        avg_force += ((float)iterator->point.data.hx711_value / (float)skip_module);
+        if (count_module >= skip_module) {
+            count_module = 0;
+            nodes_buffer[start_index].wind_speed = (float)avg_wind;
+            nodes_buffer[start_index].hx711_value = (int)avg_force;
+            start_index = (start_index + 1) % PLOT_WIDTH_PIXELS;
+
+            avg_wind = 0;
+            avg_force = 0;
+        }
+
+        iterator = iterator->next;
+    }
+
+    float max_wind;
+    float min_wind;
+    int max_force;
+    int min_force;
+    for (int i = 0; i < PLOT_WIDTH_PIXELS; i++)
+    {
+        if (nodes_buffer[i].hx711_value > max_force) max_force = nodes_buffer[i].hx711_value;
+        if (nodes_buffer[i].hx711_value < min_force) min_force = nodes_buffer[i].hx711_value;
+        if (nodes_buffer[i].wind_speed > max_wind) max_wind = nodes_buffer[i].wind_speed;
+        if (nodes_buffer[i].wind_speed < min_wind) min_wind = nodes_buffer[i].wind_speed;
+    }
+
+    int x = PLOT_WIDTH_PIXELS;
+    int i = start_index;
+    do {
+        //nodes_buffer
+
+       // low2 + (value - low1) * (high2 - low2) / (high1 - low1)
+
+        int force_plot_height = 0 + (nodes_buffer[i].hx711_value - min_force) * (PLOT_HEIGHT - 0) / (max_force - min_force);
+        int wind_plot_height = (int)(0 + (nodes_buffer[i].wind_speed - min_wind) * (PLOT_HEIGHT - 0) / (max_wind - min_wind));
+
+        int force_y = PLOT_LOWEST_POINT - force_plot_height;
+        int wind_y = PLOT_LOWEST_POINT - wind_plot_height;
+
+        LOG(Information, "force_y: %d | wind_y: %d", force_y, wind_y);
+
+        for (int y = PLOT_LOWEST_POINT - PLOT_HEIGHT; y <= PLOT_LOWEST_POINT ;y++)
+        {
+            set_buffer_pixel(x, y, y == force_y );
+            set_buffer_pixel(x+PLOT_WIDTH_PIXELS, y, y == wind_y);
+        }
+
+        x--;
+        i--;
+        if (i < 0) i = PLOT_WIDTH_PIXELS;
+    } while (i != start_index);
+
+}
+
+void send_buffer(int write_all) {
+    ST7920_draw_bitmap(display_buffer, write_all);
 }
 
 
@@ -149,51 +254,36 @@ void init_ST7920_display() {
     sleep_ms(10);
     gpio_put(3, 1);
 
-    send_data(0b0000110000);
-    //pio_sm_put_blocking(pio, sm, 0b0000110000); // Function Set
+    send_data(0b0000110000);  // Function Set
     sleep_ms(1);
 
-    send_data(0b0000110000);
-    //pio_sm_put_blocking(pio, sm, 0b0000110000); // Function Set
+    send_data(0b0000110000); // Function Set
     sleep_ms(1);
 
-    send_data(0b0000001000);
-    //pio_sm_put_blocking(pio, sm, 0b0001000000); // Display On/Off BCD1000000
+    send_data(0b0000001000); // Display On/Off BCD1000000
     sleep_ms(1);
 
-    send_data(0b0000000001);
-    //pio_sm_put_blocking(pio, sm, 0b1000000000);   // Clear
+    send_data(0b0000000001); // Clear
     sleep_ms(12);
 
-    send_data(0b0000000110);
-    //pio_sm_put_blocking(pio, sm, 0b0110000000);   // Entry mode set  SI100
+    send_data(0b0000000110); // Entry mode set  SI100
     sleep_ms(1);
 
-    send_data(0b0000001100);
-    //pio_sm_put_blocking(pio, sm, 0b1111000000); // Display On/Off BCD1000000
+    send_data(0b0000001100); // Display On/Off BCD1000000
     sleep_ms(1);
 
-    send_data(0b0000000010);
-    //pio_sm_put_blocking(pio, sm, 0b0100000000); // Return to home
+    send_data(0b0000000010); // Return to home
     sleep_ms(1);
 
     ST7920_graphic_mode(1);
-    sleep_ms(1000);
-    //ST7920_graphic_mode(0);
+
+    ST7920_draw_bitmap(test, 1);
     sleep_ms(500);
 
-    //send_data(0b0000000001);
-
-
-    while (true) {
-        //send_data(0x100);
-        /*int f = 0;
-        for (int i = 0; i < 1024; i++) {
-            test[i] = f;
-        }*/
-        //f++;
-        //if (f > 256) f = 0;
-        ST7920_draw_bitmap(test);
-        sleep_ms(100);
+    for (int i = 0; i < 1024; i++) {
+        has_changed[i] = 0;
+        display_buffer[i] = 0;
     }
+
+    send_buffer(1);
 }

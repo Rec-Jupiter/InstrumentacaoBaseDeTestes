@@ -66,21 +66,6 @@ int main() {
 
     init_ST7920_display();
 
-
-    while (true) {
-        //pio_sm_put_blocking(pio, sm, 0x00000200);
-        sleep_ms(500);
-
-
-        // Blink
-        //pio_sm_put_blocking(pio, sm, 1);
-        //sleep_ms(500);
-        // Blonk
-        //pio_sm_put_blocking(pio, sm, 0x000003FF); // All 1
-        //sleep_ms(500);
-    }
-
-
     init_i2c();
     init_display();
 
@@ -271,8 +256,12 @@ void data_list_received(Node* list) {
     char windStr[16];
     LOG(Information, "Received new buffer, first value is %d and wind speed is %f", list->point.data.hx711_value, list->point.data.wind_speed);
 
-    sprintf(str, "F: %li", list->point.data.hx711_value);
+    sprintf(str, "F: %i", list->point.data.hx711_value);
     sprintf(windStr, "W: %06.3f", list->point.data.wind_speed);
+
+    update_buffer(list);
+    send_buffer(0);
+
 
     display->clear();
     pico_ssd1306::drawText(display, font_12x16, str, 0 ,0);
@@ -282,14 +271,14 @@ void data_list_received(Node* list) {
 
     LOG(Debug, "While");
     while (list != nullptr) {
-        LOG(Debug, "Reading (sizeof: %d)", sizeof(DataPoint));
+        LOG(Debug, "Reading (sizeof: %lu)", sizeof(DataPoint));
 
         if (recording) {
             write_as_csv_buffered(list->point.data.time, list->point.data.wind_speed, list->point.data.hx711_value);
             //write_bytes_buffered(list->point.bytes, sizeof(DataPoint));
         }
 
-        LOG(Debug, "clearing list value %li", list->point.data.hx711_value);
+        LOG(Debug, "clearing list value %i", list->point.data.hx711_value);
         Node* lastNode = list;
         list = list->next;
 

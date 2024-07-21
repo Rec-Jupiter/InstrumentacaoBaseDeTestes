@@ -11,6 +11,7 @@ extern "C" {
 
 
 #include <pico/types.h>
+#include "types.h"
 
 struct Node;
 struct DataPoint;
@@ -31,22 +32,6 @@ void gpio_interrupt_handler(uint gpio, uint32_t events);
 
 void data_list_received(Node* list);
 
-
-struct __attribute__ ((__packed__)) DataPoint {                 // __attribute__ ((__packed__)) means it will be
-    uint64_t time;                                              // stored in memory without padding.
-    float wind_speed;
-    int hx711_value;
-};
-
-union DataPointUnion {                                           // Hacky union for getting the data as its bytes
-    DataPoint data;
-    uint8_t bytes[sizeof(DataPoint)];
-};
-
-struct Node {                                                    // Linked list used for buffering on Core 0
-    DataPointUnion point;
-    Node* next;
-};
 
 #ifdef __cplusplus
 }
