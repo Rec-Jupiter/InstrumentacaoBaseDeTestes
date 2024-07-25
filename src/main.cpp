@@ -259,7 +259,7 @@ void data_list_received(Node* list) {
     sprintf(str, "F: %i", list->point.data.hx711_value);
     sprintf(windStr, "W: %06.3f", list->point.data.wind_speed);
 
-    update_buffer(list);
+    update_display(list);
     send_buffer(0);
 
 

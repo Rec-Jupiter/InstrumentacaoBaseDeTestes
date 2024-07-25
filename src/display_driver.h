@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 
-void update_buffer(struct Node* data);
+void update_display(struct Node* data);
 void send_buffer(int write_all);
 void init_ST7920_display();
 

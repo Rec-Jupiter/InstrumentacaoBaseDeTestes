@@ -7,6 +7,8 @@
 
 #include "display.pio.h"
 #include "types.h"
+#include "8x8_font.h"
+#include "5x8_font.h"
 
 #define pio pio1
 
@@ -15,7 +17,7 @@ uint sm;
 unsigned char display_buffer[1024];
 unsigned char has_changed[1024];
 
-unsigned char test[] = {
+unsigned char logo[] = {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -114,7 +116,9 @@ void ST7920_draw_bitmap(const unsigned char* graphic, int write_all) {
     for (y = 0; y < 64; y++) {
         if (y < 32) {
             for (x = 0; x < 8; x++) {
-                //if (!has_changed[2*x + 16*y] && write_all == 0) continue;
+                if (!has_changed[2*x + 16*y] && write_all == 0) continue;
+                has_changed[2*x + 16*y] = 0;
+
                 send_data(0x080 | y);
                 sleep_us(200);
                 send_data(0x080 | x);
@@ -126,7 +130,9 @@ void ST7920_draw_bitmap(const unsigned char* graphic, int write_all) {
             }
         } else {
             for (x = 0; x < 8; x++) {
-                //if (!has_changed[2*x + 16*y] && write_all == 0) continue;
+                if (!has_changed[2*x + 16*y] && write_all == 0) continue;
+                has_changed[2*x + 16*y] = 0;
+
                 send_data(0x080 | (y - 32));
                 sleep_us(200);
                 send_data(0x088 | x);
@@ -155,21 +161,63 @@ void set_buffer_pixel(int x, int y, int value) {
 
 }
 
+void render_char_in_buffer(int xAnc, int yAnc, char c, const unsigned char *font) {
+    uint8_t font_width = font[0];
+    uint8_t font_height = font[1];
+
+    uint16_t seek = (c - 32) * (font_width * font_height) / 8 + 2;
+
+    uint8_t b_seek = 0;
+
+    for (uint8_t x = 0; x < font_width; x++) {
+        for (uint8_t y = 0; y < font_height; y++) {
+            if ((font[seek] >> b_seek) & 0b00000001)
+                set_buffer_pixel(x + xAnc, y + yAnc, 1);
+            else
+                set_buffer_pixel(x + xAnc, y + yAnc, 0);
+
+            b_seek++;
+
+            if (b_seek == 8) {
+                b_seek = 0;
+                seek++;
+            }
+        }
+    }
+}
+
+
+void render_text_in_buffer(int x, int y, char* str, const unsigned char *font) {
+    int xOffset = 0;
+    while (*str != '\0') {
+        render_char_in_buffer(x + xOffset, y, *str, font);
+        xOffset += font[0]; //font width
+
+        if (x + xOffset + font[0] > 128) {
+            return;
+            //linee brreak
+        }
+
+        str++;
+    }
+}
+
 #define HX711_SAMPLE_RATE_HZ 80
 #define PLOT_TIME_SECONDS 20.0
 #define PLOT_WIDTH_PIXELS 55
+#define PLOT_PADDING_PIXELS 5
 #define PLOT_HEIGHT 40
 #define PLOT_LOWEST_POINT 50
 struct DataPoint nodes_buffer[PLOT_WIDTH_PIXELS];
-int start_index = 0;
+int start_index = -1;
 int count_module = 0;
 double avg_wind = 0;
 double avg_force = 0;
 
-void update_buffer(struct Node* data) {
+void update_display(struct Node* data) {
     if (data == NULL) return;
 
-    float time_window_per_pixel = PLOT_TIME_SECONDS / PLOT_WIDTH_PIXELS;
+    float time_window_per_pixel = (float)PLOT_TIME_SECONDS / PLOT_WIDTH_PIXELS;
     int skip_module = HX711_SAMPLE_RATE_HZ * time_window_per_pixel;
 
     //count_module = 0;
@@ -179,13 +227,14 @@ void update_buffer(struct Node* data) {
     while (iterator->next != NULL) {
         count_module++;
 
-        avg_wind += iterator->point.data.wind_speed / skip_module;
+        avg_wind += iterator->point.data.wind_speed / (float)skip_module;
         avg_force += ((float)iterator->point.data.hx711_value / (float)skip_module);
         if (count_module >= skip_module) {
             count_module = 0;
+
+            start_index = (start_index + 1) % PLOT_WIDTH_PIXELS;
             nodes_buffer[start_index].wind_speed = (float)avg_wind;
             nodes_buffer[start_index].hx711_value = (int)avg_force;
-            start_index = (start_index + 1) % PLOT_WIDTH_PIXELS;
 
             avg_wind = 0;
             avg_force = 0;
@@ -194,38 +243,88 @@ void update_buffer(struct Node* data) {
         iterator = iterator->next;
     }
 
-    float max_wind;
-    float min_wind;
-    int max_force;
-    int min_force;
+    char str[256];
+    sprintf(str, " F: %7li  V: %06.3f", nodes_buffer[start_index].hx711_value, nodes_buffer[start_index].wind_speed);
+
+    render_text_in_buffer(0, 0, str, font_5x8);
+    render_text_in_buffer(0, PLOT_LOWEST_POINT + 3, "Recording Status", font_8x8);
+
+    float max_wind = 0;
+    //float min_wind;
+    int max_force = 0;
+    int min_force = 0;
     for (int i = 0; i < PLOT_WIDTH_PIXELS; i++)
     {
         if (nodes_buffer[i].hx711_value > max_force) max_force = nodes_buffer[i].hx711_value;
         if (nodes_buffer[i].hx711_value < min_force) min_force = nodes_buffer[i].hx711_value;
         if (nodes_buffer[i].wind_speed > max_wind) max_wind = nodes_buffer[i].wind_speed;
-        if (nodes_buffer[i].wind_speed < min_wind) min_wind = nodes_buffer[i].wind_speed;
+        //if (nodes_buffer[i].wind_speed < min_wind) min_wind = nodes_buffer[i].wind_speed;
     }
 
+    int last_force_y = -1;
+    int last_wind_y = -1;
     int x = PLOT_WIDTH_PIXELS;
     int i = start_index;
     do {
         //nodes_buffer
 
-       // low2 + (value - low1) * (high2 - low2) / (high1 - low1)
+        // low2 + (value - low1) * (high2 - low2) / (high1 - low1)
 
-        int force_plot_height = 0 + (nodes_buffer[i].hx711_value - min_force) * (PLOT_HEIGHT - 0) / (max_force - min_force);
-        int wind_plot_height = (int)(0 + (nodes_buffer[i].wind_speed - min_wind) * (PLOT_HEIGHT - 0) / (max_wind - min_wind));
+        //if (min_force > 1500) min_force = 0; //TODO review this
+        max_force += 20;
+        min_force -= 20;
 
-        int force_y = PLOT_LOWEST_POINT - force_plot_height;
-        int wind_y = PLOT_LOWEST_POINT - wind_plot_height;
+        int force_plot_height = (int)(0.0 + (float)(nodes_buffer[i].hx711_value - min_force) * (float)(PLOT_HEIGHT - 0) / (float)(max_force - min_force));
+        int wind_plot_height = (int)(0 + (float)(nodes_buffer[i].wind_speed - 0) * (float)(PLOT_HEIGHT - 0) / (float)(max_wind - 0));
+
+        int force_y = PLOT_LOWEST_POINT - force_plot_height +1;
+        int wind_y = PLOT_LOWEST_POINT - wind_plot_height +1;
 
         LOG(Information, "force_y: %d | wind_y: %d", force_y, wind_y);
 
-        for (int y = PLOT_LOWEST_POINT - PLOT_HEIGHT; y <= PLOT_LOWEST_POINT ;y++)
+        for (int y = PLOT_LOWEST_POINT - PLOT_HEIGHT; y <= PLOT_LOWEST_POINT; y++)
         {
-            set_buffer_pixel(x, y, y == force_y );
-            set_buffer_pixel(x+PLOT_WIDTH_PIXELS, y, y == wind_y);
+            set_buffer_pixel(x+PLOT_PADDING_PIXELS, y, y == force_y || (((x + y) % 2 == 0) && y > force_y));
+            set_buffer_pixel(x+PLOT_WIDTH_PIXELS+(2*PLOT_PADDING_PIXELS), y, y == wind_y || (((x + y) % 2 == 0) && y > wind_y));
+
+            if (x == 0) {
+                set_buffer_pixel(x+PLOT_PADDING_PIXELS, y, !(y % 2));
+                set_buffer_pixel(x+PLOT_WIDTH_PIXELS+(2*PLOT_PADDING_PIXELS), y, !(y % 2));
+            }
         }
+
+        if (last_wind_y > 0) {
+            int min = 0, max = 0;
+            if (last_wind_y > wind_y) {
+                min = wind_y;
+                max = last_wind_y;
+            } else {
+                min = last_wind_y;
+                max = wind_y;
+            }
+
+            for (int y = min; y < max; y++)
+                set_buffer_pixel(x+PLOT_WIDTH_PIXELS+(2*PLOT_PADDING_PIXELS), y, 1);
+        }
+        if (last_force_y > 0) {
+            int min = 0, max = 0;
+            if (last_force_y > force_y) {
+                min = force_y;
+                max = last_force_y;
+            } else {
+                min = last_force_y;
+                max = force_y;
+            }
+
+            for (int y = min; y < max; y++)
+                set_buffer_pixel(x+PLOT_PADDING_PIXELS, y, 1);
+        }
+
+        set_buffer_pixel(x+PLOT_PADDING_PIXELS, PLOT_LOWEST_POINT, !(x % 2));
+        set_buffer_pixel(x+PLOT_WIDTH_PIXELS+(2*PLOT_PADDING_PIXELS), PLOT_LOWEST_POINT, !(x % 2));
+
+        last_force_y = force_y;
+        last_wind_y = wind_y;
 
         x--;
         i--;
@@ -277,7 +376,7 @@ void init_ST7920_display() {
 
     ST7920_graphic_mode(1);
 
-    ST7920_draw_bitmap(test, 1);
+    ST7920_draw_bitmap(logo, 1);
     sleep_ms(500);
 
     for (int i = 0; i < 1024; i++) {
