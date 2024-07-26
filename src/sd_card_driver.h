@@ -12,7 +12,7 @@ extern "C" {
 #include "inttypes.h"
 #include "ff.h"
 
-void init_sd();
+int init_sd();
 void save_to_sd(char* filename, uint8_t* bytes, int bytesToWrite);
 void write_as_csv_buffered(uint64_t time, float wind, int hx711);
 void write_bytes_buffered(const uint8_t* bytes, int bytesToWrite);

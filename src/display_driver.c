@@ -1,4 +1,5 @@
 #include <hardware/pio.h>
+#include <stdarg.h>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "helpers.h"
@@ -202,6 +203,8 @@ void render_text_in_buffer(int x, int y, char* str, const unsigned char *font) {
     }
 }
 
+
+
 #define HX711_SAMPLE_RATE_HZ 80
 #define PLOT_TIME_SECONDS 20.0
 #define PLOT_WIDTH_PIXELS 55
@@ -213,6 +216,10 @@ int start_index = -1;
 int count_module = 0;
 double avg_wind = 0;
 double avg_force = 0;
+
+void print_footer(char* str) {
+    render_text_in_buffer(0, PLOT_LOWEST_POINT + 3, str, font_8x8);
+}
 
 void update_display(struct Node* data) {
     if (data == NULL) return;
@@ -247,7 +254,6 @@ void update_display(struct Node* data) {
     sprintf(str, " F: %7li  V: %06.3f", nodes_buffer[start_index].hx711_value, nodes_buffer[start_index].wind_speed);
 
     render_text_in_buffer(0, 0, str, font_5x8);
-    render_text_in_buffer(0, PLOT_LOWEST_POINT + 3, "Recording Status", font_8x8);
 
     float max_wind = 0;
     //float min_wind;
@@ -261,6 +267,15 @@ void update_display(struct Node* data) {
         //if (nodes_buffer[i].wind_speed < min_wind) min_wind = nodes_buffer[i].wind_speed;
     }
 
+    max_force = ((max_force / (int)500) + 1) * 500;
+    if (max_force == 0) max_force = 500;
+    if (min_force < 0) min_force = ((min_force / (int)500) - 1) * 500;
+    else min_force = 0;
+
+    if (max_wind <= 0.0000001) max_wind = 10;
+    // '.. CLang-tidy possible loss of precision..' this is by design, its not an error.
+    max_wind = (float)(((int)max_wind / (int)10) + 1) * 10.0f;
+
     int last_force_y = -1;
     int last_wind_y = -1;
     int x = PLOT_WIDTH_PIXELS;
@@ -271,25 +286,26 @@ void update_display(struct Node* data) {
         // low2 + (value - low1) * (high2 - low2) / (high1 - low1)
 
         //if (min_force > 1500) min_force = 0; //TODO review this
-        max_force += 20;
-        min_force -= 20;
 
-        int force_plot_height = (int)(0.0 + (float)(nodes_buffer[i].hx711_value - min_force) * (float)(PLOT_HEIGHT - 0) / (float)(max_force - min_force));
-        int wind_plot_height = (int)(0 + (float)(nodes_buffer[i].wind_speed - 0) * (float)(PLOT_HEIGHT - 0) / (float)(max_wind - 0));
+        float min_force_height = 0;
+        float min_wind_height = 0;
+
+        int force_plot_height = (int)(min_force_height + (float)(nodes_buffer[i].hx711_value - min_force) * (float)(PLOT_HEIGHT - min_force_height) / (float)(max_force - min_force));
+        int wind_plot_height = (int)(min_wind_height + (float)(nodes_buffer[i].wind_speed - 0) * (float)(PLOT_HEIGHT - min_wind_height) / (float)(max_wind - 0));
 
         int force_y = PLOT_LOWEST_POINT - force_plot_height +1;
         int wind_y = PLOT_LOWEST_POINT - wind_plot_height +1;
 
-        LOG(Information, "force_y: %d | wind_y: %d", force_y, wind_y);
+        LOG(Debug, "force_y: %d | wind_y: %d (i %d [sti %d] x %d) / max %d min %d", force_y, wind_y, i, start_index, x, max_force, min_force);
 
         for (int y = PLOT_LOWEST_POINT - PLOT_HEIGHT; y <= PLOT_LOWEST_POINT; y++)
         {
             set_buffer_pixel(x+PLOT_PADDING_PIXELS, y, y == force_y || (((x + y) % 2 == 0) && y > force_y));
             set_buffer_pixel(x+PLOT_WIDTH_PIXELS+(2*PLOT_PADDING_PIXELS), y, y == wind_y || (((x + y) % 2 == 0) && y > wind_y));
 
-            if (x == 0) {
-                set_buffer_pixel(x+PLOT_PADDING_PIXELS, y, !(y % 2));
-                set_buffer_pixel(x+PLOT_WIDTH_PIXELS+(2*PLOT_PADDING_PIXELS), y, !(y % 2));
+            if (x == 1) {
+                set_buffer_pixel(x+PLOT_PADDING_PIXELS-1, y, !(y % 2));
+                set_buffer_pixel(x+PLOT_WIDTH_PIXELS+(2*PLOT_PADDING_PIXELS)-1, y, !(y % 2));
             }
         }
 
@@ -328,7 +344,7 @@ void update_display(struct Node* data) {
 
         x--;
         i--;
-        if (i < 0) i = PLOT_WIDTH_PIXELS;
+        if (i < 0) i = PLOT_WIDTH_PIXELS - 1;
     } while (i != start_index);
 
 }

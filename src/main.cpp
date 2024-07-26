@@ -36,6 +36,7 @@
 
 pico_ssd1306::SSD1306* display;
 hx711_t* hx;
+int sd_success = 0;
 
 int windClicks = 0;
 
@@ -69,13 +70,13 @@ int main() {
     init_i2c();
     init_display();
 
+    multicore_launch_core1(core1_entry);
+
     sleep_ms(1500);
 
     init_hx711();
     init_wind_measure();
 
-
-    multicore_launch_core1(core1_entry);
 
 
     measuring_loop_blocking();
@@ -90,14 +91,14 @@ int main() {
 
     LOG_COLORED(Information, CONSOLE_COLOR_GREEN, "Core 1 executing");
 
-    sleep_ms(500);
-    init_sd();
+
+    sd_success = init_sd();
 
     gpio_init(RECORDING_SWITCH);
     gpio_set_dir(RECORDING_SWITCH, GPIO_IN);
     gpio_pull_up(RECORDING_SWITCH);
 
-
+    sleep_ms(500);
 
     uint32_t last_flag = 0xFFFFFFFF;
 
@@ -109,10 +110,14 @@ int main() {
             LOG_COLORED(Verbose, CONSOLE_COLOR_CYAN, "Recording switch turned off!");
             recording = false;
             finish_current_recording();
+
+            if (sd_success) LOG_FOOTER("Not Recording      ");
         } else if (!recording && !gpio_get(RECORDING_SWITCH)) { // Recording sw on
             LOG_COLORED(Verbose, CONSOLE_COLOR_CYAN, "Recording switch turned on!");
             recording = true;
             char* filename = create_new_recording();
+
+            if (sd_success) LOG_FOOTER("File: %s", filename);
 
             display->clear();
             pico_ssd1306::drawText(display, font_12x16, filename, 0 ,40);
@@ -163,12 +168,12 @@ int main() {
     uint64_t lastTime = time_us_64();
 
     while (true) {
-        int value = hx711_get_raw_value(hx)/* * 852.0/730000.0*/; //blocking
+        int value = hx711_get_value(hx)/* * 852.0/730000.0*/; //blocking
 
         /*if ((value & 0x00C00000) >= 0)  // Bit 23 == 1
             value |= 0xFF000000;*/
 
-        LOG(Debug, "blocking value: %8li", value);
+        LOG(Debug, "blocking value: %8i", value);
 
         uint64_t timeSinceLastMeasureUS = time_us_64() - lastWindMeasureTime;
         if (timeSinceLastMeasureUS >= WIND_SAMPLE_TIME_US) {
@@ -269,20 +274,19 @@ void data_list_received(Node* list) {
     display->sendBuffer();
 
 
-    LOG(Debug, "While");
     while (list != nullptr) {
-        LOG(Debug, "Reading (sizeof: %lu)", sizeof(DataPoint));
+        //LOG(Debug, "Reading (sizeof: %lu)", sizeof(DataPoint));
 
         if (recording) {
             write_as_csv_buffered(list->point.data.time, list->point.data.wind_speed, list->point.data.hx711_value);
             //write_bytes_buffered(list->point.bytes, sizeof(DataPoint));
         }
 
-        LOG(Debug, "clearing list value %i", list->point.data.hx711_value);
+        //LOG(Debug, "clearing list value %i", list->point.data.hx711_value);
         Node* lastNode = list;
         list = list->next;
 
-        LOG(Debug, "Freeing node memory");
+        //LOG(Debug, "Freeing node memory");
         free(lastNode);
         createdNodes--;
     }

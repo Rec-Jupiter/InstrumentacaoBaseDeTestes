@@ -11,6 +11,7 @@
 #include "f_util.h"
 #include "sd_card_driver.h"
 #include "config.h"
+#include "display_driver.h"
 
 #define BUFFER_LEN 4096
 
@@ -19,7 +20,7 @@ uint8_t buf_data[BUFFER_LEN];
 int current_buf_offset;
 char* current_recording_file_name;
 
-void init_sd() {
+int init_sd() {
     LOG(Information, "Init SD card");
 
     gpio_pull_up(MOSI_GPIO);
@@ -35,8 +36,9 @@ void init_sd() {
     FRESULT fr = f_mount(fs, "", 1);
     if (FR_OK != fr) {
         LOG(Error, "f_mount error: %s (%d)", FRESULT_str(fr), fr);
+        LOG_FOOTER("Card error %d", fr);
         f_unmount("");
-        return;
+        return 0;
     }
     else LOG(Information, "f_mount successful");
 
@@ -49,17 +51,21 @@ void init_sd() {
 
     /* Print the free space (assuming 512 bytes/sector) */
     LOG(Information, "%10lu KiB total drive space.\n             %10lu KiB available.\n", tot_sect / 2, fre_sect / 2);
+    LOG_FOOTER("%.2f MB free, success", 1.049 * fre_sect / (2*1024));
 
     list_dir("");
     current_recording_file_name = get_next_recording_name("");
 
     f_unmount("");
+
+    return 1;
 }
 
 char* create_new_recording() {
     FRESULT fr = f_mount(fs, "", 1);
     if (FR_OK != fr) {
         LOG(Error, "f_mount error when creating new recording: %s (%d)", FRESULT_str(fr), fr);
+        LOG_FOOTER("SD Error [nf] %d", fr);
         f_unmount("");
         return NULL;
     }
@@ -91,7 +97,7 @@ void reset_buffer() {
 
 void write_as_csv_buffered(uint64_t time, float wind, int hx711) {
     char buf[256] = "\0";
-    sprintf(buf, "%u,%f,%d\n", time, wind, hx711);
+    sprintf(buf, "%lu,%f,%d\n", time, wind, hx711);
 
     LOG(Debug, "CSV LINE: %s", buf);
 
@@ -125,7 +131,10 @@ void save_to_sd(char* filename, uint8_t* bytes, int bytesToWrite) {
     FIL fil;
 
     FRESULT fr = f_mount(fs, "", 0);
-    if (FR_OK != fr) LOG(Error, "f_mount error when saving to sd: %s (%d)", FRESULT_str(fr), fr);
+    if (FR_OK != fr) {
+        LOG(Error, "f_mount error when saving to sd: %s (%d)", FRESULT_str(fr), fr);
+        LOG_FOOTER("SD Error [save] %d", fr);
+    }
     else LOG(Information, "f_mount successful when saving to sd");
 
 
@@ -139,10 +148,14 @@ void save_to_sd(char* filename, uint8_t* bytes, int bytesToWrite) {
             break;
         default:            // Error
             LOG(Error, "Error when trying to access the existence of file %s - %s (%d)", filename, FRESULT_str(fr), fr);
+            LOG_FOOTER("SD Error [save] %d", fr);
             return;
     }
 
-    if (FR_OK != fr && FR_EXIST != fr) LOG(Error, "f_open(%s) error: %s (%d)", filename, FRESULT_str(fr), fr);
+    if (FR_OK != fr && FR_EXIST != fr) {
+        LOG(Error, "f_open(%s) error: %s (%d)", filename, FRESULT_str(fr), fr);
+        LOG_FOOTER("SD Error [save] %d", fr);
+    }
     else LOG(Information, "f_open(%s) success: %s (%d)", filename, FRESULT_str(fr), fr);
 
     UINT writtenBytes = 0;
@@ -150,6 +163,7 @@ void save_to_sd(char* filename, uint8_t* bytes, int bytesToWrite) {
 
     if (fr != FR_OK) {
         LOG(Error, "f_write failed %s (%d)", FRESULT_str(fr), fr);
+        LOG_FOOTER("SD Error [save] %d", fr);
     }
     if (writtenBytes != bytesToWrite) LOG(Warning, "Bytes written and to write do not match (tw: %d w: %d)", bytesToWrite, writtenBytes);
 
@@ -157,6 +171,7 @@ void save_to_sd(char* filename, uint8_t* bytes, int bytesToWrite) {
 
     if (FR_OK != fr) {
         LOG(Error, "f_close error: %s (%d)", FRESULT_str(fr), fr);
+        LOG_FOOTER("SD Error [save] %d", fr);
     }
 
     f_unmount("");
