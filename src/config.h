@@ -9,6 +9,11 @@
 
 // If you are changing the pins, please refer to https://pico.pinout.xyz/
 
+#define ST7920_SD 0
+#define ST7920_SCK 1
+#define ST7920_CS 2
+#define ST7920_RST 3
+
 // Display GPIO Pins
 #define I2C i2c0
 #define I2C_PIN_SDA 4
@@ -30,7 +35,7 @@
 
 #define WIND_RADIUS 0.105 // In meters
 
-// Recording Controll GPIO Pin
+// Recording Controll GPIO Pin (Low active)
 #define RECORDING_SWITCH 6
 
 

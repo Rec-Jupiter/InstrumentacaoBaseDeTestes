@@ -358,16 +358,16 @@ void init_ST7920_display() {
     uint offset = pio_add_program(pio, &display_program);
 
     sm = pio_claim_unused_sm(pio, true);
-    display_program_init(pio, sm, offset, 0, 1, 2);
+    display_program_init(pio, sm, offset, ST7920_SD, ST7920_SCK, ST7920_CS);
 
-    gpio_init(3);
-    gpio_set_dir(3, GPIO_OUT);
+    gpio_init(ST7920_RST);
+    gpio_set_dir(ST7920_RST, GPIO_OUT);
 
     sleep_ms(100);
 
-    gpio_put(3, 0);
+    gpio_put(ST7920_RST, 0);
     sleep_ms(10);
-    gpio_put(3, 1);
+    gpio_put(ST7920_RST, 1);
 
     send_data(0b0000110000);  // Function Set
     sleep_ms(1);
