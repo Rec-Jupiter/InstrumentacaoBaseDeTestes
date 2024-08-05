@@ -9,17 +9,14 @@
 
 // If you are changing the pins, please refer to https://pico.pinout.xyz/
 
+// ST7920 Display Config
 #define ST7920_SD 0
 #define ST7920_SCK 1
 #define ST7920_CS 2
 #define ST7920_RST 3
 
-// Display GPIO Pins
-#define I2C i2c0
-#define I2C_PIN_SDA 4
-#define I2C_PIN_SCL 5
-
 // SD Card GPIO Pins
+#define SD_SPI spi0
 #define SCK_GPIO 18     // SPI0
 #define MOSI_GPIO 19    // SPI0
 #define MISO_GPIO 16    // SPI0

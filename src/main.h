@@ -19,8 +19,6 @@ union DataPointUnion;
 
 
 void init_hx711();
-void init_display();
-void init_i2c();
 void init_wind_measure();
 
 void gpio_interrupt_handler(uint gpio, uint32_t events);

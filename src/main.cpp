@@ -2,8 +2,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include "extern/hx711-pico-c/include/common.h"
-#include "extern/pico-ssd1306/textRenderer/TextRenderer.h"
-#include "extern/pico-ssd1306/ssd1306.h"
 #include "pico/multicore.h"
 #include "hardware/flash.h"
 #include "hardware/gpio.h"
@@ -34,7 +32,6 @@
 
 // === GLOBAL VARIABLES ===
 
-pico_ssd1306::SSD1306* display;
 hx711_t* hx;
 int sd_success = 0;
 
@@ -66,9 +63,6 @@ int main() {
     sleep_ms(3500);
 
     init_ST7920_display();
-
-    init_i2c();
-    init_display();
 
     multicore_launch_core1(core1_entry);
 
@@ -118,10 +112,6 @@ int main() {
             char* filename = create_new_recording();
 
             if (sd_success) LOG_FOOTER("File: %s", filename);
-
-            display->clear();
-            pico_ssd1306::drawText(display, font_12x16, filename, 0 ,40);
-            display->sendBuffer();
         }
 
         while(multicore_fifo_rvalid()) {
@@ -267,13 +257,6 @@ void data_list_received(Node* list) {
     update_display(list);
     send_buffer(0);
 
-
-    display->clear();
-    pico_ssd1306::drawText(display, font_12x16, str, 0 ,0);
-    pico_ssd1306::drawText(display, font_12x16, windStr, 0 ,20);
-    display->sendBuffer();
-
-
     while (list != nullptr) {
         //LOG(Debug, "Reading (sizeof: %lu)", sizeof(DataPoint));
 
@@ -316,38 +299,6 @@ void init_wind_measure() {
     gpio_set_dir(WIND_GPIO, GPIO_IN);
     gpio_pull_down(WIND_GPIO);
     gpio_set_irq_enabled_with_callback(WIND_GPIO, GPIO_IRQ_EDGE_RISE, true, &gpio_interrupt_handler);
-}
-
-void init_i2c() {
-    LOG(Information, "Setting i2c");
-    i2c_init(I2C, 1000000); //Use i2c port with baud rate of 1Mhz
-    //Set pins for I2C operation
-    gpio_set_function(I2C_PIN_SDA, GPIO_FUNC_I2C);
-    gpio_set_function(I2C_PIN_SCL, GPIO_FUNC_I2C);
-    gpio_pull_up(I2C_PIN_SDA);
-    gpio_pull_up(I2C_PIN_SCL);
-}
-
-void init_display() {
-    LOG(Information, "Creating display");
-    display = new pico_ssd1306::SSD1306(I2C, 0x3C, pico_ssd1306::Size::W128xH64);
-
-    LOG(Verbose, "Sending data!");
-    //create a vertical line on x: 64 y:0-63
-    for (int y = 0; y < 64; y++){
-        display->setPixel(64, y);
-    }
-    LOG(Verbose, "Buffer Made");
-
-    display->sendBuffer(); //Send buffer to device and show on screen
-    sleep_ms(1000);
-    display->clear();
-    // Draw some text
-    // Notice how we first pass the address of display object to the function
-    drawText(display, font_12x16, "Waiting...", 0 ,0);
-    display->sendBuffer();
-
-    LED_OFF();
 }
 
 void init_hx711() {

@@ -13,6 +13,21 @@
 
 #define pio pio1
 
+#define HX711_SAMPLE_RATE_HZ 80
+#define PLOT_TIME_SECONDS 20.0
+#define PLOT_WIDTH_PIXELS 55
+#define PLOT_PADDING_PIXELS 5
+#define PLOT_HEIGHT 40
+#define PLOT_LOWEST_POINT 50
+
+
+struct DataPoint nodes_buffer[PLOT_WIDTH_PIXELS];
+int start_index = -1;
+int count_module = 0;
+double avg_wind = 0;
+double avg_force = 0;
+
+
 uint sm;
 
 unsigned char display_buffer[1024];
@@ -205,17 +220,6 @@ void render_text_in_buffer(int x, int y, char* str, const unsigned char *font) {
 
 
 
-#define HX711_SAMPLE_RATE_HZ 80
-#define PLOT_TIME_SECONDS 20.0
-#define PLOT_WIDTH_PIXELS 55
-#define PLOT_PADDING_PIXELS 5
-#define PLOT_HEIGHT 40
-#define PLOT_LOWEST_POINT 50
-struct DataPoint nodes_buffer[PLOT_WIDTH_PIXELS];
-int start_index = -1;
-int count_module = 0;
-double avg_wind = 0;
-double avg_force = 0;
 
 void print_footer(char* str) {
     render_text_in_buffer(0, PLOT_LOWEST_POINT + 3, str, font_8x8);

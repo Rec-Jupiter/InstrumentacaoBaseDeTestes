@@ -18,7 +18,7 @@ add_executable(InstrBase
         src/helpers.c
         src/display.pio
         src/display_driver.c
-        src/display_driver.h src/types.h src/8x8_font.h)
+        src/display_driver.h src/types.h src/8x8_font.h src/5x8_font.h)
 
 pico_generate_pio_header(InstrBase ${CMAKE_CURRENT_LIST_DIR}/src/display.pio)
 
@@ -27,7 +27,6 @@ pico_enable_stdio_usb(InstrBase 1)
 
 pico_add_extra_outputs(InstrBase)
 
-add_subdirectory(src/extern/pico-ssd1306)
 add_subdirectory(src/extern/hx711-pico-c)
 add_subdirectory(src/extern/no-os-fat32-sd/src build)
 target_link_libraries(InstrBase
@@ -35,7 +34,6 @@ target_link_libraries(InstrBase
     pico_multicore
     hardware_pio
     hx711-pico-c
-    pico_ssd1306
     hardware_i2c
         no-OS-FatFS-SD-SDIO-SPI-RPi-Pico)
 
