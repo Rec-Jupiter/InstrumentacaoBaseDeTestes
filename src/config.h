@@ -9,9 +9,9 @@
 
 // If you are changing the pins, please refer to https://pico.pinout.xyz/
 
-#define ST7920_SD 0
-#define ST7920_SCK 1
-#define ST7920_CS 2
+#define ST7920_SD 1
+#define ST7920_SCK 2
+#define ST7920_CS 0
 #define ST7920_RST 3
 
 // Display GPIO Pins
