@@ -7,8 +7,74 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="36863ac5-28b2-47ca-9047-0b83a1a083eb" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../cmake-build-debug/CMakeCache.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../cmake-build-debug/CMakeCache.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../cmake-build-debug/CMakeFiles/clion-environment.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../cmake-build-debug/CMakeFiles/clion-environment.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.h" beforeDir="false" afterPath="$PROJECT_DIR$/config.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/display_driver.c" beforeDir="false" afterPath="$PROJECT_DIR$/display_driver.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/basic_text/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/basic_text/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/basic_text/output.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/basic_text/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/bitmap_image/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/bitmap_image/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/bitmap_image/output.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/bitmap_image/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/draw_line/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/draw_line/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/draw_line/output.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/draw_line/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/falling_dots/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/falling_dots/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/falling_dots/output1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/falling_dots/output2.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/falling_dots/output3.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/falling_dots/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/flag/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/flag/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/flag/output1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/flag/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/multiple_displays/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/multiple_displays/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/multiple_displays/output1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/multiple_displays/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_advanced/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_advanced/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_advanced/output1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_advanced/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_extended_ascii/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_extended_ascii/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_extended_ascii/output1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/text_extended_ascii/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/write_mode/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/write_mode/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/write_mode/output1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/write_mode/output2.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/write_mode/output3.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/examples/write_mode/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/frameBuffer/FrameBuffer.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/frameBuffer/FrameBuffer.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/shapeRenderer/ShapeRenderer.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/shapeRenderer/ShapeRenderer.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/shapeRenderer/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/ssd1306.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/ssd1306.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/12x16_font.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/16x32_font.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/5x8_font.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/8x8_font.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/CMakeLists.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/TextRenderer.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/TextRenderer.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/textRenderer/readme.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extern/pico-ssd1306/usage.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hw_config.c" beforeDir="false" afterPath="$PROJECT_DIR$/hw_config.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.h" beforeDir="false" afterPath="$PROJECT_DIR$/main.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +113,7 @@
       <option name="presentableId" value="Default" />
       <updated>1720037481340</updated>
       <workItem from="1720037482682" duration="3000" />
-      <workItem from="1725041698800" duration="674000" />
+      <workItem from="1725041698800" duration="738000" />
     </task>
     <servers />
   </component>
