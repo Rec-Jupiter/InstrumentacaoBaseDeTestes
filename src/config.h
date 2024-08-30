@@ -18,15 +18,15 @@
 #define SD_SPI spi0
 #define SCK_GPIO 18     // SPI0
 #define MOSI_GPIO 19    // SPI0
-#define MISO_GPIO 16    // SPI0
+#define MISO_GPIO 16    // SPI0 ok
 #define SS_SDCARD_GPIO 17
 
 // HX711 Pins
-#define HX711_PIN_CLK 14
-#define HX711_PIN_DATA 15
+#define HX711_PIN_CLK 12
+#define HX711_PIN_DATA 13
 
 // Wind Stuff
-#define WIND_GPIO 10
+#define WIND_GPIO 21
 #define WIND_SAMPLE_TIME_US 1000000
 
 #define WIND_RADIUS 0.105 // In meters
