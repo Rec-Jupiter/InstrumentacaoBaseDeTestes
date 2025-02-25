@@ -516,7 +516,7 @@ static bool sd_sdio_test_com(sd_card_t *sd_card_p) {
 }
 
 // Helper function to configure whole GPIO in one line
-static void gpio_conf(uint gpio, enum gpio_function fn, bool pullup, bool pulldown, bool output, bool initial_state, bool fast_slew)
+static void gpio_conf(uint gpio, enum gpio_function_rp2040 fn, bool pullup, bool pulldown, bool output, bool initial_state, bool fast_slew)
 {
     gpio_put(gpio, initial_state);
     gpio_set_dir(gpio, output);
@@ -525,7 +525,7 @@ static void gpio_conf(uint gpio, enum gpio_function fn, bool pullup, bool pulldo
 
     if (fast_slew)
     {
-        padsbank0_hw->io[gpio] |= PADS_BANK0_GPIO0_SLEWFAST_BITS;
+        pads_bank0_hw->io[gpio] |= PADS_BANK0_GPIO0_SLEWFAST_BITS;
     }
 }
 

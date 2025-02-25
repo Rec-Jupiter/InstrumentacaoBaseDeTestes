@@ -32,7 +32,7 @@
 #define WIND_RADIUS 0.105 // In meters
 
 // Recording Controll GPIO Pin (Low active)
-#define RECORDING_SWITCH 6
+#define RECORDING_SWITCH 22
 
 
 

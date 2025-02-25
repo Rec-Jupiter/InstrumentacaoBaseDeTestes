@@ -245,7 +245,7 @@ void update_display(struct Node* data) {
 
             start_index = (start_index + 1) % PLOT_WIDTH_PIXELS;
             nodes_buffer[start_index].wind_speed = (float)avg_wind;
-            nodes_buffer[start_index].hx711_value = (int)avg_force;
+            nodes_buffer[start_index].hx711_value = avg_force;
 
             avg_wind = 0;
             avg_force = 0;
@@ -255,14 +255,14 @@ void update_display(struct Node* data) {
     }
 
     char str[256];
-    sprintf(str, " F: %7li  V: %06.3f", nodes_buffer[start_index].hx711_value, nodes_buffer[start_index].wind_speed);
+    sprintf(str, " F: %7f  V: %06.3f", nodes_buffer[start_index].hx711_value, nodes_buffer[start_index].wind_speed);
 
     render_text_in_buffer(0, 0, str, font_5x8);
 
     float max_wind = 0;
     //float min_wind;
-    int max_force = 0;
-    int min_force = 0;
+    float max_force = 0;
+    float min_force = 0;
     for (int i = 0; i < PLOT_WIDTH_PIXELS; i++)
     {
         if (nodes_buffer[i].hx711_value > max_force) max_force = nodes_buffer[i].hx711_value;
@@ -271,17 +271,16 @@ void update_display(struct Node* data) {
         //if (nodes_buffer[i].wind_speed < min_wind) min_wind = nodes_buffer[i].wind_speed;
     }
 
-    max_force = ((max_force / (int)500) + 1) * 500;
-    if (max_force == 0) max_force = 500;
-    if (min_force < 0) min_force = ((min_force / (int)500) - 1) * 500;
+    max_force = ((max_force / (int)50) + 1) * 50;
+    if (max_force == 0) max_force = 50;
+    if (min_force < 0) min_force = ((min_force / (int)50) - 1) * 50;
     else min_force = 0;
 
     if (max_wind <= 0.0000001) max_wind = 10;
     // '.. CLang-tidy possible loss of precision..' this is by design, its not an error.
     max_wind = (float)(((int)max_wind / (int)10) + 1) * 10.0f;
 
-    int last_force_y = -1;
-    int last_wind_y = -1;
+    int last_force_y = -1;    int last_wind_y = -1;
     int x = PLOT_WIDTH_PIXELS;
     int i = start_index;
     do {

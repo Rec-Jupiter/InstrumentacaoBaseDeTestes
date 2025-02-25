@@ -143,7 +143,7 @@ int main() {
 
 
 [[noreturn]] void measuring_loop_blocking() {
-    Node* head = (Node*)malloc(sizeof(Node));
+    auto head = static_cast<Node *>(malloc(sizeof(Node)));
     head->next = nullptr;
     Node* currentNode = head;
 
@@ -158,12 +158,13 @@ int main() {
     uint64_t lastTime = time_us_64();
 
     while (true) {
-        int value = hx711_get_value(hx)/* * 852.0/730000.0*/; //blocking
+        const int rawValue = hx711_get_value(hx); //blocking
+        const float value = 5.0 * 10.0 * ((static_cast<float>(rawValue) - static_cast<float>(36000.0)) / static_cast<float>(44000.0));
 
         /*if ((value & 0x00C00000) >= 0)  // Bit 23 == 1
             value |= 0xFF000000;*/
 
-        LOG(Debug, "blocking value: %8i", value);
+        LOG(Debug, "blocking value: %8f | RawValue: %8i", value, rawValue);
 
         uint64_t timeSinceLastMeasureUS = time_us_64() - lastWindMeasureTime;
         if (timeSinceLastMeasureUS >= WIND_SAMPLE_TIME_US) {
@@ -189,16 +190,14 @@ int main() {
         count++;
 
         if (count >= MIN_DATA_BUFFER_LEN) {
-            LOG(Verbose, "blocking value: %8li", value);
+            LOG(Verbose, "blocking value: %8f | raw Value %li", value, rawValue);
             LOG(Verbose, "Period time: %" PRIu64, time_us_64() - lastTime);
             LOG(Verbose, "Can Send %d", canSendData);
         }
 
 
         while (multicore_fifo_rvalid()) {
-            uint32_t flag = multicore_fifo_pop_blocking();
-
-            switch (flag) {
+            switch (const uint32_t flag = multicore_fifo_pop_blocking()) {
                 case DONT_SEND_DATA_FLAG:
                     LOG(Information, "Cant send data flag received");
                     canSendData = false;
@@ -249,9 +248,9 @@ void data_list_received(Node* list) {
 
     char str[16];
     char windStr[16];
-    LOG(Information, "Received new buffer, first value is %d and wind speed is %f", list->point.data.hx711_value, list->point.data.wind_speed);
+    LOG(Information, "Received new buffer, first value is %f and wind speed is %f", list->point.data.hx711_value, list->point.data.wind_speed);
 
-    sprintf(str, "F: %i", list->point.data.hx711_value);
+    sprintf(str, "F: %06.3f", list->point.data.hx711_value);
     sprintf(windStr, "W: %06.3f", list->point.data.wind_speed);
 
     update_display(list);

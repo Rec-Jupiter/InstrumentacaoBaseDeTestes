@@ -95,9 +95,9 @@ void reset_buffer() {
     }
 }
 
-void write_as_csv_buffered(uint64_t time, float wind, int hx711) {
+void write_as_csv_buffered(uint64_t time, float wind, float hx711) {
     char buf[256] = "\0";
-    sprintf(buf, "%lu,%f,%d\n", time, wind, hx711);
+    sprintf(buf, "%lu,%f,%f\n", time, wind, hx711);
 
     LOG(Debug, "CSV LINE: %s", buf);
 

@@ -14,7 +14,7 @@ extern "C" {
 struct __attribute__ ((__packed__)) DataPoint {                 // __attribute__ ((__packed__)) means it will be
     uint64_t time;                                              // stored in memory without padding.
     float wind_speed;
-    int hx711_value;
+    float hx711_value;
 };
 
 union DataPointUnion {                                           // Hacky union for getting the data as its bytes
